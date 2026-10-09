@@ -267,7 +267,7 @@ function HallStatsDialog({ event, onClose }: { event: { id: string; title: strin
                         <span className="flex items-center gap-2"><UserCheck className="size-3.5 text-primary" />{s.full_name ?? s.email ?? "Organizer"}</span>
                         <span className="flex items-center gap-1 text-xs text-muted-foreground"><ScanLine className="size-3.5" />{s.scans} scans</span>
                       </div>
-                    )) : <p className="text-xs text-muted-foreground">Koi organizer assign nahi — sirf event owner/admin scan kar sakte hain.</p>}
+                    )) : <p className="text-xs text-muted-foreground">No organizers assigned — only event owner or admin can scan.</p>}
                   </div>
                 </div>
               ))}
@@ -364,7 +364,7 @@ function OrganizersTab({ organizers, staff, events, onChanged, onAssign }: {
         </form>
         <div className="panel space-y-3 p-5">
           <p className="flex items-center gap-2 font-semibold"><LayoutGrid className="size-4 text-primary" /> Assign organizers to an event</p>
-          <p className="text-xs text-muted-foreground">Event chuno → hall banao → har hall me ek ya zyada organizers assign karo.</p>
+          <p className="text-xs text-muted-foreground">Select event → create halls/zones → assign one or more organizers per hall.</p>
           <select className="h-10 w-full rounded-md border bg-background px-3 text-sm" value={pick} onChange={(e) => setPick(e.target.value)}>
             <option value="">Select event…</option>
             {events.map((e) => <option key={e.id} value={e.id}>{e.title}</option>)}

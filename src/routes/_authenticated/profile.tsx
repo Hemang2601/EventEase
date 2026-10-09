@@ -178,7 +178,7 @@ function ProfilePage() {
               </p>
             </div>
           </div>
-          <p className="mt-4 text-xs text-muted-foreground">Email aur account type change nahi ho sakte. Naam apne hisaab se badal sakte ho.</p>
+          <p className="mt-4 text-xs text-muted-foreground">Email and account type cannot be changed. You can update your display name at any time.</p>
         </div>
       </div>
     </AppShell>

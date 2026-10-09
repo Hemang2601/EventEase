@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { ImageUpload } from "./ImageUpload";
 import { CATEGORIES, categoryImage } from "@/lib/categories";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "./ui/dialog";
+import { HostBadge } from "./HostBadge";
 import { fmtDate } from "@/lib/events";
 import { cn } from "@/lib/utils";
 
@@ -222,6 +223,9 @@ export function CreateEventDialog({ userId }: { userId: string }) {
                 <div className="mt-4">
                   <div className="mb-1.5 flex justify-between text-xs text-muted-foreground"><span className="flex items-center gap-1"><Users className="size-3.5" /> 0 / {f.capacity || 0} registered</span></div>
                   <div className="h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full w-0 rounded-full bg-primary" /></div>
+                </div>
+                <div className="mt-3 border-t pt-3">
+                  <HostBadge name={organizerName || "Organizer"} photo={f.host_photo_url || null} />
                 </div>
               </div>
             </div>

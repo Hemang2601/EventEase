@@ -106,8 +106,8 @@ function Explore() {
   });
 
   const body = (
-    <div className={signedInStudent ? "" : "min-h-screen"}>
-      <div className={signedInStudent ? "" : "mx-auto max-w-7xl px-5 pt-6 sm:px-8"}>
+    <div className={signedInStudent ? "w-full max-w-full overflow-x-hidden" : "min-h-screen w-full max-w-full overflow-x-hidden"}>
+      <div className={signedInStudent ? "w-full max-w-full overflow-x-hidden" : "mx-auto max-w-7xl px-4 pt-4 sm:px-8 sm:pt-6 w-full max-w-full overflow-x-hidden"}>
         {!signedInStudent && (
           <header className="flex h-16 items-center justify-between">
             <Brand />
@@ -115,31 +115,35 @@ function Explore() {
           </header>
         )}
 
-        <section className="explore-bento mt-3">
+        <section className="explore-bento mt-2 sm:mt-3 w-full max-w-full overflow-hidden">
           <div className="explore-heading">
-            <p className="mb-4 flex items-center gap-2 text-xs font-semibold uppercase text-electric"><Sparkles className="size-4" /> EventEase · Student portal</p>
-            <h1 className="text-4xl font-bold sm:text-6xl">Explore <span className="text-gradient">events</span></h1>
-            <p className="mt-4 max-w-md text-base text-muted-foreground">Discover academic summits, tech hackathons, and cultural festivals happening around you.</p>
+            <p className="mb-2.5 sm:mb-4 flex items-center gap-2 text-xs font-semibold uppercase text-electric"><Sparkles className="size-4" /> EventEase · Student portal</p>
+            <h1 className="text-3xl font-bold sm:text-5xl lg:text-6xl">Explore <span className="text-gradient">events</span></h1>
+            <p className="mt-2.5 sm:mt-4 max-w-md text-sm sm:text-base text-muted-foreground">Discover academic summits, tech hackathons, and cultural festivals happening around you.</p>
           </div>
           <div className="explore-filters">
-            <div className="glass-tile p-4">
+            <div className="glass-tile p-3.5 sm:p-4">
               <div className="relative">
-                <Search className="absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input aria-label="Search events" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search events..." className="h-12 border-0 bg-transparent pl-11 shadow-none focus-visible:ring-0" />
+                <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input aria-label="Search events" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search events..." className="h-11 sm:h-12 border-0 bg-transparent pl-10 sm:pl-11 shadow-none focus-visible:ring-0 text-sm" />
               </div>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {["All", ...CATEGORIES].map((c) => <Button key={c} size="sm" variant={cat === c ? "default" : "outline"} onClick={() => setCat(c)}>{c}</Button>)}
+              <div className="mt-3 flex overflow-x-auto pb-1 gap-2 sm:flex-wrap no-scrollbar">
+                {["All", ...CATEGORIES].map((c) => (
+                  <Button key={c} size="sm" variant={cat === c ? "default" : "outline"} onClick={() => setCat(c)} className="shrink-0 h-8 sm:h-9 text-xs sm:text-sm">
+                    {c}
+                  </Button>
+                ))}
               </div>
             </div>
-            <div className="glass-tile flex items-center justify-between px-4 py-3 text-xs text-muted-foreground">
-              <span>{events.isLoading ? "Loading events…" : `Showing ${list.length} events`}</span>
+            <div className="glass-tile flex items-center justify-between px-3.5 py-2.5 sm:px-4 sm:py-3 text-xs text-muted-foreground">
+              <span>{events.isLoading ? "Loading events…" : `Showing ${list.length} ${list.length === 1 ? "event" : "events"}`}</span>
               <CalendarDays className="size-4 text-electric" />
             </div>
           </div>
         </section>
 
         {/* Events — same continuous page, directly under the hero card */}
-        <main className="relative py-10">
+        <main className="relative py-8 sm:py-10 overflow-hidden w-full max-w-full">
           <div className="glass-field" aria-hidden />
           <div className="relative z-10">
             <p className="mb-5 text-sm text-muted-foreground">
@@ -166,7 +170,7 @@ function Explore() {
                     <article
                       key={e.id}
                       onMouseMove={trackGlass}
-                      className="event-tile glass-tile animate-rise flex flex-col"
+                      className="event-tile glass-tile animate-rise flex flex-col overflow-hidden max-w-full"
                       style={{ animationDelay: `${i * 50}ms` }}
                     >
                       <div className="relative aspect-video shrink-0 overflow-hidden rounded-t-xl">
@@ -214,19 +218,21 @@ function Explore() {
 
                         {e.description && <p className="mt-3 line-clamp-2 text-sm text-muted-foreground">{e.description}</p>}
 
-                        <div className="event-actions glass-host mt-auto flex flex-wrap items-center justify-between gap-3 border-t pt-4">
+                        <div className="event-actions glass-host mt-auto flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t pt-4">
                           <div className="min-w-0 flex-1"><HostBadge name={e.host_name} photo={e.host_photo_url} /></div>
-                          {registered ? (
-                            <Button className="h-10" variant="outline" disabled><BadgeCheck /> Already registered</Button>
-                          ) : !e.is_open ? (
-                            <Button className="h-10" variant="outline" disabled>Registrations closed</Button>
-                          ) : full ? (
-                            <Button className="h-10" variant="outline" disabled>Event full</Button>
-                          ) : user ? (
-                            <Button className="h-10" onClick={() => { setRegEvent(e); setDoneCode(null); }}>Register <ArrowRight /></Button>
-                          ) : (
-                            <Button asChild className="h-10"><Link to="/register/$eventId" params={{ eventId: e.id }}>Register <ArrowRight /></Link></Button>
-                          )}
+                          <div className="w-full sm:w-auto shrink-0">
+                            {registered ? (
+                              <Button className="h-10 w-full sm:w-auto" variant="outline" disabled><BadgeCheck /> Already registered</Button>
+                            ) : !e.is_open ? (
+                              <Button className="h-10 w-full sm:w-auto" variant="outline" disabled>Registrations closed</Button>
+                            ) : full ? (
+                              <Button className="h-10 w-full sm:w-auto" variant="outline" disabled>Event full</Button>
+                            ) : user ? (
+                              <Button className="h-10 w-full sm:w-auto" onClick={() => { setRegEvent(e); setDoneCode(null); }}>Register <ArrowRight /></Button>
+                            ) : (
+                              <Button asChild className="h-10 w-full sm:w-auto"><Link to="/register/$eventId" params={{ eventId: e.id }}>Register <ArrowRight /></Link></Button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </article>
@@ -237,14 +243,14 @@ function Explore() {
           </div>
         </main>
 
-        <footer className="flex items-center justify-between border-t py-6 text-xs text-muted-foreground">
+        <footer className="flex flex-col sm:flex-row items-center justify-between gap-2 border-t py-6 text-xs text-muted-foreground text-center sm:text-left">
           <span>EventEase · Secure QR check-in for college events</span>
           <span>Atmiya University</span>
         </footer>
       </div>
 
       <Dialog open={!!regEvent} onOpenChange={(open) => { if (!open) { setRegEvent(null); setDoneCode(null); } }}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="max-h-[92vh] overflow-y-auto w-[calc(100vw-32px)] sm:max-w-lg p-5 sm:p-6">
           {regEvent && (
             <>
               <DialogHeader>

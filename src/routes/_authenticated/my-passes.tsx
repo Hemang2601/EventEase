@@ -97,43 +97,51 @@ function Page() {
 
   return (
     <AppShell title="My passes">
-      <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
+      <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">My passes</h1>
-          <p className="mt-2 text-sm text-muted-foreground">Show the QR at the gate. You can change or cancel an event any time before it starts.</p>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">My passes</h1>
+          <p className="mt-1.5 sm:mt-2 text-xs sm:text-sm text-muted-foreground">Show the QR at the gate. You can change or cancel an event any time before it starts.</p>
         </div>
-        <Button asChild variant="outline"><Link to="/explore">Register for more</Link></Button>
+        <Button asChild variant="outline" className="w-full sm:w-auto shrink-0 h-10"><Link to="/explore">Register for more</Link></Button>
       </div>
-      {q.isLoading ? <Skeleton className="h-[560px] max-w-sm rounded-3xl" /> : !passes.length ? (
-        <div className="grid place-items-center rounded-2xl border border-dashed bg-card p-14 text-center">
+      {q.isLoading ? (
+        <div className="grid place-items-center py-8"><Skeleton className="h-[520px] w-full max-w-[380px] rounded-3xl" /></div>
+      ) : !passes.length ? (
+        <div className="grid place-items-center rounded-2xl border border-dashed bg-card p-8 sm:p-14 text-center">
           <TicketIcon className="size-10 text-primary" />
-          <p className="mt-4 text-lg font-semibold">No passes yet</p>
-          <p className="mt-1 text-sm text-muted-foreground">Register for an event while signed in to see your pass here.</p>
-          <Button asChild className="mt-5"><Link to="/explore">Explore events</Link></Button>
+          <p className="mt-4 text-base sm:text-lg font-semibold">No passes yet</p>
+          <p className="mt-1 max-w-sm text-xs sm:text-sm text-muted-foreground">Register for an event while signed in to see your pass here.</p>
+          <Button asChild className="mt-5 w-full sm:w-auto"><Link to="/explore">Explore events</Link></Button>
         </div>
       ) : (
-        <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-6 sm:gap-8 md:grid-cols-2 xl:grid-cols-3 justify-items-center">
           {passes.map((p) => {
             const locked = !!p.checked_in_at || (p.events ? new Date(p.events.starts_at) <= new Date() : true);
             return (
-              <div key={p.id} className="space-y-3">
+              <div key={p.id} className="w-full max-w-[380px] space-y-3">
                 <Ticket code={p.code} name={p.full_name} eventTitle={p.events?.title ?? "Event"}
                   date={p.events ? fmtDate(p.events.starts_at) : undefined} meta={p.events?.venue ?? undefined} checkedInAt={p.checked_in_at} />
                 {locked ? (
-                  <p className="flex items-center justify-center gap-2 text-xs text-muted-foreground"><Lock size={13} /> {p.checked_in_at ? "Checked in — pass used" : "Event started — changes locked"}</p>
+                  <p className="flex items-center justify-center gap-2 text-xs text-muted-foreground py-1"><Lock size={13} /> {p.checked_in_at ? "Checked in — pass used" : "Event started — changes locked"}</p>
                 ) : (
                   <div className="grid grid-cols-2 gap-2">
-                    <Button variant="outline" onClick={() => { setSwitching(p); setTarget(""); }}><ArrowLeftRight /> Change event</Button>
+                    <Button variant="outline" size="sm" className="h-9 sm:h-10 text-xs sm:text-sm" onClick={() => { setSwitching(p); setTarget(""); }}>
+                      <ArrowLeftRight className="size-3.5 sm:size-4 shrink-0" /> <span className="truncate">Change event</span>
+                    </Button>
                     <AlertDialog>
-                      <AlertDialogTrigger asChild><Button variant="outline" className="text-destructive"><Trash2 /> Cancel</Button></AlertDialogTrigger>
-                      <AlertDialogContent>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="outline" size="sm" className="h-9 sm:h-10 text-xs sm:text-sm text-destructive">
+                          <Trash2 className="size-3.5 sm:size-4 shrink-0" /> <span className="truncate">Cancel</span>
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent className="w-[calc(100vw-32px)] sm:max-w-md p-5 sm:p-6 rounded-2xl">
                         <AlertDialogHeader>
                           <AlertDialogTitle>Cancel this registration?</AlertDialogTitle>
                           <AlertDialogDescription>Your seat for {p.events?.title} will be released and the QR code stops working.</AlertDialogDescription>
                         </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Keep it</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => cancel(p.id)}>Yes, cancel</AlertDialogAction>
+                        <AlertDialogFooter className="flex-col-reverse sm:flex-row gap-2 sm:gap-0">
+                          <AlertDialogCancel className="w-full sm:w-auto">Keep it</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => cancel(p.id)} className="w-full sm:w-auto">Yes, cancel</AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>
@@ -146,7 +154,7 @@ function Page() {
       )}
 
       <Dialog open={!!switching} onOpenChange={(o) => !o && setSwitching(null)}>
-        <DialogContent className="panel border-border sm:max-w-md">
+        <DialogContent className="panel border-border w-[calc(100vw-32px)] sm:max-w-md p-5 sm:p-6 rounded-2xl">
           <DialogHeader>
             <DialogTitle>Change event</DialogTitle>
             <DialogDescription>Move your seat from “{switching?.events?.title}” to another open event. You'll get a new code.</DialogDescription>
@@ -170,12 +178,12 @@ function Page() {
           </Select>
           {targetEvent && targetEvent.seatsLeft === 0 && (
             <p className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              Is event me jagah nahi hai — {targetEvent.title} full ho chuka hai. Koi aur event chuno.
+              This event is fully booked — {targetEvent.title} has no remaining seats. Please select another event.
             </p>
           )}
           {targetEvent && targetEvent.seatsLeft > 0 && (
             <p className="rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-sm text-muted-foreground">
-              {targetEvent.title} me <span className="font-semibold text-foreground">{targetEvent.seatsLeft} seat{targetEvent.seatsLeft === 1 ? "" : "s"}</span> khali hain.
+              {targetEvent.title} has <span className="font-semibold text-foreground">{targetEvent.seatsLeft} seat{targetEvent.seatsLeft === 1 ? "" : "s"}</span> available.
             </p>
           )}
           <Button variant="hero" className="h-11 w-full" disabled={!target || busy || targetEvent?.seatsLeft === 0} onClick={doSwitch}>{busy && <Loader2 className="animate-spin" />} Confirm change</Button>

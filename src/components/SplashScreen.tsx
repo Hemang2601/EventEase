@@ -2,35 +2,54 @@ import { useEffect, useState } from "react";
 import { QrCode } from "lucide-react";
 
 const LETTERS = "EventEase".split("");
+const SPLASH_SESSION_KEY = "eventease_splash_shown";
+
+function hasShownSplash(): boolean {
+  if (typeof window === "undefined") return true;
+  try {
+    return Boolean(sessionStorage.getItem(SPLASH_SESSION_KEY));
+  } catch {
+    return false;
+  }
+}
 
 /**
- * Premium startup splash shown once per app load/refresh.
- * Fades in instantly, holds, then fades out and unmounts.
+ * Premium startup splash shown ONLY ONCE when user first enters the app.
+ * Does NOT show again on reloads, refreshes or route changes.
  */
 export function SplashScreen() {
-  const [phase, setPhase] = useState<"show" | "fade" | "gone">("show");
+  const [phase, setPhase] = useState<"show" | "fade" | "gone">(() => {
+    return hasShownSplash() ? "gone" : "show";
+  });
   const [pct, setPct] = useState(0);
 
   useEffect(() => {
-    const t1 = setTimeout(() => setPhase("fade"), 1300);
-    const t2 = setTimeout(() => setPhase("gone"), 1900);
+    if (phase === "gone") return;
+    try {
+      sessionStorage.setItem(SPLASH_SESSION_KEY, "1");
+    } catch {
+      // Ignore if storage is unavailable
+    }
+    const t1 = setTimeout(() => setPhase("fade"), 1100);
+    const t2 = setTimeout(() => setPhase("gone"), 1650);
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
     };
-  }, []);
+  }, [phase]);
 
   useEffect(() => {
+    if (phase === "gone") return;
     const start = performance.now();
     let raf = 0;
     const tick = (now: number) => {
-      const p = Math.min(100, Math.round(((now - start) / 1150) * 100));
+      const p = Math.min(100, Math.round(((now - start) / 950) * 100));
       setPct(p);
       if (p < 100) raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, []);
+  }, [phase]);
 
   if (phase === "gone") return null;
 

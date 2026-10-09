@@ -13,6 +13,7 @@ export const myEventsQuery = (userId: string, all = false) =>
   queryOptions({
     queryKey: ["events", userId, all],
     queryFn: async (): Promise<EventWithStats[]> => {
+      if (!userId && !all) return [];
       let q = supabase.from("events").select("*");
       if (!all) {
         // Events I own + events where I'm assigned as hall staff

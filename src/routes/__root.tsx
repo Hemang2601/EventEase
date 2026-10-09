@@ -4,12 +4,15 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   useLocation,
   HeadContent,
   Scripts,
+  isRedirect,
   type ErrorComponentProps,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { Compass, Home, Loader2, RefreshCw } from "lucide-react";
 
 import appCss from "../styles.css?url";
 import { reportAppError } from "../lib/error-reporting";
@@ -17,6 +20,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "@/components/ui/sonner";
 import { SplashScreen } from "@/components/SplashScreen";
 import { ThemeProvider, ThemeControl, useTheme } from "@/components/ThemeControl";
+import { BrandMark } from "@/components/Brand";
+import { Button } from "@/components/ui/button";
 
 function NotFoundComponent() {
   return (
@@ -41,37 +46,109 @@ function NotFoundComponent() {
 }
 
 function ErrorComponent({ error, reset }: ErrorComponentProps) {
-  console.error(error);
   const router = useRouter();
+  const [retrying, setRetrying] = useState(true);
+  const [attempts, setAttempts] = useState(0);
+
+  // 1. If this error is a redirect, show a spinner while router navigates
+  if (isRedirect(error)) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="size-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // 2. Handle dynamic chunk import failures (e.g. stale cache or new deployment)
   useEffect(() => {
+    const msg = error instanceof Error ? error.message : String(error ?? "");
+    if (
+      msg.includes("Failed to fetch dynamically imported module") ||
+      msg.includes("Loading chunk") ||
+      msg.includes("Importing a module script failed") ||
+      msg.includes("error loading dynamically imported module")
+    ) {
+      const key = "ee_chunk_reload";
+      const last = sessionStorage.getItem(key);
+      const now = Date.now();
+      if (!last || now - Number(last) > 15000) {
+        sessionStorage.setItem(key, String(now));
+        window.location.reload();
+        return;
+      }
+    }
     reportAppError(error, { boundary: "tanstack_root_error_component" });
   }, [error]);
 
+  // 3. Auto-retry with loader: smoothly hides transient network hiccups
+  useEffect(() => {
+    if (attempts < 2) {
+      const timer = setTimeout(() => {
+        setAttempts((prev) => prev + 1);
+        try {
+          router.invalidate();
+          reset();
+        } catch {
+          // Continue
+        }
+      }, 1200);
+      return () => clearTimeout(timer);
+    } else {
+      setRetrying(false);
+    }
+  }, [attempts, router, reset]);
+
+  // While retrying, show a sleek branded EventEase loader
+  if (retrying) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
+        <div className="flex flex-col items-center gap-4 text-center animate-pulse">
+          <BrandMark />
+          <div className="mt-2 flex items-center gap-2.5 rounded-full border bg-card px-4 py-2 text-xs font-medium text-muted-foreground shadow-sm">
+            <Loader2 className="size-4 animate-spin text-primary" />
+            <span>Loading, please wait…</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Fallback after retries: Sleek themed card (not the stark white screen)
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          This page didn't load
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Something went wrong on our end. You can try refreshing or head back home.
+    <div className="flex min-h-screen items-center justify-center bg-background p-4">
+      <div className="w-full max-w-md rounded-2xl border bg-card p-6 sm:p-8 text-center shadow-card animate-rise">
+        <div className="mx-auto mb-4 grid size-12 place-items-center rounded-2xl bg-primary/10 text-primary">
+          <RefreshCw className="size-6" />
+        </div>
+        <h2 className="text-xl font-bold tracking-tight text-foreground">
+          Connection paused
+        </h2>
+        <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+          The page took longer than expected to respond. You can try refreshing or browse other events.
         </p>
-        <div className="mt-6 flex flex-wrap justify-center gap-2">
-          <button
+        <div className="mt-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-2.5">
+          <Button
             onClick={() => {
+              setRetrying(true);
+              setAttempts(0);
               router.invalidate();
               reset();
             }}
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            variant="hero"
+            className="h-10 text-sm"
           >
-            Try again
-          </button>
-          <a
-            href="/"
-            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
-          >
-            Go home
-          </a>
+            <RefreshCw className="size-4" /> Try again
+          </Button>
+          <Button asChild variant="outline" className="h-10 text-sm">
+            <Link to="/explore">
+              <Compass className="size-4" /> Explore events
+            </Link>
+          </Button>
+          <Button asChild variant="ghost" className="h-10 text-sm">
+            <Link to="/">
+              <Home className="size-4" /> Home
+            </Link>
+          </Button>
         </div>
       </div>
     </div>
@@ -113,11 +190,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" className="overflow-x-hidden">
       <head>
         <HeadContent />
       </head>
-      <body>
+      <body className="min-h-screen w-full max-w-full overflow-x-hidden">
         {children}
         <Scripts />
       </body>
@@ -137,6 +214,8 @@ function ThemedRoot() {
   const standalone = pathname === "/auth" || pathname.startsWith("/register/") || pathname.startsWith("/ticket/");
   const router = useRouter();
 
+  const isNavigating = useRouterState({ select: (s) => s.status === "pending" });
+
   useEffect(() => {
     const { data } = supabase.auth.onAuthStateChange((event) => {
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
@@ -148,8 +227,13 @@ function ThemedRoot() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      {isNavigating && (
+        <div aria-hidden className="fixed inset-x-0 top-0 z-[9999] h-1 overflow-hidden bg-primary/20">
+          <div className="h-full w-full origin-left bg-gradient-brand animate-grow" />
+        </div>
+      )}
       <SplashScreen />
-      <div className={inner ? "inner-theme relative" : "relative"} data-theme={resolved}><Outlet />{(!inner || standalone) && <div className={inner ? "theme-floating" : "theme-floating theme-floating--landing"}><ThemeControl /></div>}</div>
+      <div className={inner ? "inner-theme relative min-h-screen w-full max-w-full overflow-x-hidden" : "relative min-h-screen w-full max-w-full overflow-x-hidden"} data-theme={resolved}><Outlet />{(!inner || standalone) && <div className={inner ? "theme-floating" : "theme-floating theme-floating--landing"}><ThemeControl /></div>}</div>
       <Toaster theme={inner ? resolved : "light"} position="top-center" richColors />
     </QueryClientProvider>
   );

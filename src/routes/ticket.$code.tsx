@@ -62,7 +62,7 @@ function TicketPage() {
   }, [user]);
 
   return (
-    <div className="bg-hero relative flex min-h-screen flex-col overflow-hidden px-4 py-5">
+    <div className="bg-hero relative flex min-h-screen w-full max-w-full flex-col overflow-x-hidden px-4 py-5">
       <div className="grid-lines pointer-events-none absolute inset-0" />
       <div className="pointer-events-none absolute -right-24 -top-24 size-72 rounded-full bg-primary/25 blur-3xl" />
 

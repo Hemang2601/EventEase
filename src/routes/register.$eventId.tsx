@@ -59,27 +59,27 @@ function PublicRegister() {
   const left = e && stats.data ? Math.max(0, e.capacity - stats.data.registered) : null;
 
   return (
-    <div className="relative min-h-screen overflow-hidden">
+    <div className="relative min-h-screen w-full max-w-full overflow-x-hidden">
       <div className="bg-hero absolute inset-x-0 top-0 h-72"><div className="grid-lines absolute inset-0" /></div>
-      <header className="relative z-10 mx-auto flex h-20 max-w-3xl items-center justify-between px-6"><Brand light /><Link to="/explore" className="text-sm text-navy-muted hover:text-navy-foreground">All events</Link></header>
-      <main className="relative z-10 mx-auto max-w-3xl space-y-6 px-6 pb-20">
+      <header className="relative z-10 mx-auto flex h-16 sm:h-20 max-w-3xl items-center justify-between px-4 sm:px-6"><Brand light /><Link to="/explore" className="text-xs sm:text-sm text-navy-muted hover:text-navy-foreground">All events</Link></header>
+      <main className="relative z-10 mx-auto max-w-3xl space-y-5 sm:space-y-6 px-4 sm:px-6 pb-20 w-full max-w-full overflow-x-hidden">
         {ev.isLoading && <Skeleton className="h-64 rounded-2xl" />}
-        {!ev.isLoading && !e && <div className="panel p-10 text-center"><p className="text-xl font-semibold">Event not found</p><p className="mt-2 text-sm text-muted-foreground">This registration link is invalid or the event was removed.</p></div>}
+        {!ev.isLoading && !e && <div className="panel p-6 sm:p-10 text-center"><p className="text-xl font-semibold">Event not found</p><p className="mt-2 text-sm text-muted-foreground">This registration link is invalid or the event was removed.</p></div>}
         {e && (
           <>
             <section className="panel animate-rise overflow-hidden">
-              {e.cover_url && <img src={e.cover_url} alt={e.title} className="h-56 w-full object-cover sm:h-72" />}
-              <div className="p-6 sm:p-8">
+              {e.cover_url && <img src={e.cover_url} alt={e.title} className="h-48 sm:h-64 md:h-72 w-full object-cover" />}
+              <div className="p-5 sm:p-8">
               <p className={`font-mono text-[11px] uppercase tracking-[0.25em] ${e.is_open ? "text-electric" : "text-destructive"}`}>{e.is_open ? "Registration open" : "Registration closed"}</p>
-              <h1 className="mt-2 text-3xl font-bold sm:text-4xl">{e.title}</h1>
-              <p className="mt-3 flex flex-wrap gap-4 font-mono text-xs text-muted-foreground">
-                <span className="flex items-center gap-1"><CalendarDays className="size-3" />{fmtDate(e.starts_at)}</span>
-                {e.venue && <span className="flex items-center gap-1"><MapPin className="size-3" />{e.venue}</span>}
+              <h1 className="mt-2 text-2xl sm:text-3xl md:text-4xl font-bold">{e.title}</h1>
+              <p className="mt-3 flex flex-wrap gap-3 sm:gap-4 font-mono text-xs text-muted-foreground">
+                <span className="flex items-center gap-1.5"><CalendarDays className="size-3.5 shrink-0" />{fmtDate(e.starts_at)}</span>
+                {e.venue && <span className="flex items-center gap-1.5"><MapPin className="size-3.5 shrink-0" />{e.venue}</span>}
               </p>
-              <div className="mt-5"><HostBadge name={e.host_name} photo={e.host_photo_url} /></div>
-              {e.description && <p className="mt-4 text-sm text-muted-foreground">{e.description}</p>}
+              <div className="mt-4 sm:mt-5"><HostBadge name={e.host_name} photo={e.host_photo_url} /></div>
+              {e.description && <p className="mt-4 text-sm text-muted-foreground leading-relaxed">{e.description}</p>}
               {left !== null && (
-                <p className={`mt-5 inline-block rounded px-3 py-1.5 font-mono text-xs ring-1 ${left ? "bg-success-soft text-success ring-success/25" : "bg-destructive/10 text-destructive ring-destructive/25"}`}>
+                <p className={`mt-4 sm:mt-5 inline-block rounded px-3 py-1.5 font-mono text-xs ring-1 ${left ? "bg-success-soft text-success ring-success/25" : "bg-destructive/10 text-destructive ring-destructive/25"}`}>
                   {left ? `${left} of ${e.capacity} seats left` : "Event is full"}
                 </p>
               )}

@@ -140,11 +140,11 @@ export function CheckInPanel({ eventId, onDone, logs = [] }: { eventId: string; 
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
                 placeholder="EE-XXXX-XXXX"
-                className="h-11 font-mono uppercase tracking-widest"
+                className="h-11 flex-1 min-w-0 font-mono uppercase tracking-widest text-xs sm:text-sm"
                 aria-label="Entry code"
                 autoFocus
               />
-              <Button type="submit" variant="hero" className="h-11 px-6" disabled={busy || !code.trim()}>
+              <Button type="submit" variant="hero" className="h-11 px-4 sm:px-6 shrink-0" disabled={busy || !code.trim()}>
                 {busy ? <Loader2 className="animate-spin" /> : "Verify"}
               </Button>
             </form>

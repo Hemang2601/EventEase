@@ -26,6 +26,7 @@ import {
 import { eventQuery, fmtDate, participantsQuery, scanLogsQuery } from "@/lib/events";
 import { categoryImage } from "@/lib/categories";
 import { ZonesPanel } from "@/components/ZonesPanel";
+import { HostBadge } from "@/components/HostBadge";
 import { useRoles } from "@/lib/roles";
 import { Users as UsersIcon, ChartNoAxesCombined, ScanLine } from "lucide-react";
 import { Panel, PanelHeader } from "@/components/ee/index";
@@ -113,7 +114,7 @@ function EventConsole() {
       <Link to="/events" className="mb-5 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary"><ArrowLeft className="size-4" /> All events</Link>
 
       <section className="bg-hero relative mb-6 animate-rise overflow-hidden rounded-3xl p-6 text-navy-foreground sm:p-8">
-        <img src={categoryImage(e.category)} alt="" width={1024} height={640} className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-25" />
+        <img src={e.cover_url || categoryImage(e.category)} alt="" width={1024} height={640} className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-30" />
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-navy via-navy/85 to-navy/30" />
         <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="min-w-0">
@@ -124,12 +125,15 @@ function EventConsole() {
               {e.venue && <span className="flex items-center gap-1.5"><MapPin className="size-4" />{e.venue}</span>}
             </p>
             {e.description && <p className="mt-3 max-w-[60ch] text-sm text-navy-muted">{e.description}</p>}
+            <div className="mt-4">
+              <HostBadge name={e.host_name} photo={e.host_photo_url} light />
+            </div>
           </div>
-          <div className="grid shrink-0 grid-cols-3 gap-3">
+          <div className="grid shrink-0 grid-cols-3 gap-2 sm:gap-3">
             {[["Registered", registered, ""], ["Checked in", checkedIn, "text-success"], ["Capacity", e.capacity, ""]].map(([l, v, c]) => (
-              <div key={l as string} className="min-w-[104px] rounded-2xl bg-navy-2/80 px-4 py-3 ring-1 ring-navy-border backdrop-blur">
-                <p className="text-[11px] text-navy-muted">{l}</p>
-                <CountUp value={v as number} className={`mt-1 block font-display text-2xl font-bold ${c}`} />
+              <div key={l as string} className="min-w-0 sm:min-w-[104px] rounded-2xl bg-navy-2/80 px-2.5 sm:px-4 py-2.5 sm:py-3 text-center sm:text-left ring-1 ring-navy-border backdrop-blur">
+                <p className="text-[10px] sm:text-[11px] text-navy-muted truncate">{l}</p>
+                <CountUp value={v as number} className={`mt-0.5 sm:mt-1 block font-display text-lg sm:text-2xl font-bold ${c}`} />
               </div>
             ))}
           </div>

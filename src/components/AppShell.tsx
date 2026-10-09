@@ -147,19 +147,56 @@ function Guard({ allow, children }: { allow?: Role[] | undefined; children: Reac
   );
 }
 
-function StudentTopNav({ onNavigate }: { onNavigate?: () => void }) {
+function StudentTopNav({ onNavigate, vertical = false }: { onNavigate?: () => void; vertical?: boolean }) {
   const { pathname } = useLocation();
   return (
-    <nav className="flex items-center gap-1 overflow-x-auto">
+    <nav className={cn(
+      vertical ? "flex flex-col gap-1 w-full" : "flex items-center gap-1 overflow-x-auto"
+    )}>
       {participantNav.map((n) => {
         const active = pathname === n.to;
         return (
           <Link key={n.to} to={n.to} onClick={onNavigate}
             className={cn(
-              "flex h-9 shrink-0 items-center gap-2 rounded-lg px-3.5 text-[13px] font-medium transition-colors",
-              active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground",
+              "flex items-center gap-2.5 rounded-xl px-3.5 text-[13px] font-medium transition-all",
+              vertical ? "h-11 w-full" : "h-9 shrink-0",
+              active ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-muted hover:text-foreground",
             )}>
-            <n.icon size={15} strokeWidth={active ? 2.3 : 1.8} /> {n.label}
+            <n.icon size={vertical ? 18 : 15} strokeWidth={active ? 2.3 : 1.8} />
+            <span>{n.label}</span>
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+
+function StudentMobileBottomNav() {
+  const { pathname } = useLocation();
+  return (
+    <nav
+      aria-label="Mobile navigation"
+      className="fixed bottom-0 inset-x-0 z-40 flex h-16 w-full max-w-full items-center justify-around border-t border-border bg-card/95 px-2 backdrop-blur-xl md:hidden shadow-float overflow-x-hidden"
+    >
+      {participantNav.map((n) => {
+        const active = pathname === n.to;
+        const shortName = n.label.split(" ")[0];
+        return (
+          <Link
+            key={n.to}
+            to={n.to}
+            className={cn(
+              "relative flex flex-1 flex-col items-center justify-center gap-1 py-1.5 transition-colors text-center",
+              active ? "text-primary font-semibold" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <n.icon size={20} strokeWidth={active ? 2.3 : 1.8} className={active ? "scale-105 transition-transform" : undefined} />
+            <span className="text-[11px] leading-tight tracking-tight">
+              {shortName}
+            </span>
+            {active && (
+              <span className="absolute bottom-1 size-1 rounded-full bg-primary" />
+            )}
           </Link>
         );
       })}
@@ -242,34 +279,44 @@ export function AppShell({ title, children, actions, allow }: { title: string; c
   // Students get a clean top-nav layout — no organizer sidebar.
   if (!rolesLoading && !isAdmin && !isOrganizer) {
     return (
-      <div className="glass-ambient min-h-screen bg-background">
+      <div className="glass-ambient min-h-screen w-full max-w-full overflow-x-hidden bg-background">
         <header className="workspace-header sticky top-0 z-20 border-b bg-card/85 backdrop-blur-md">
-          <div className="mx-auto flex h-[68px] max-w-[1400px] items-center justify-between gap-4 px-5 sm:px-8">
-            <Link to="/explore" aria-label="EventEase home"><BrandMark /></Link>
+          <div className="mx-auto flex h-[60px] sm:h-[68px] max-w-[1400px] items-center justify-between gap-2.5 px-4 sm:px-8">
+            <Link to="/explore" aria-label="EventEase home" className="shrink-0"><BrandMark /></Link>
             <div className="hidden md:block"><StudentTopNav /></div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <ThemeControl />
               <Sheet open={open} onOpenChange={setOpen}>
-                <SheetTrigger asChild><Button variant="ghost" size="icon" className="md:hidden" aria-label="Open menu"><Menu /></Button></SheetTrigger>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon" className="md:hidden size-9" aria-label="Open menu">
+                    <Menu className="size-5" />
+                  </Button>
+                </SheetTrigger>
                 <SheetContent side="left" className="w-[280px] p-5">
                   <SheetTitle className="sr-only">Navigation</SheetTitle>
                   <div className="mb-6"><Brand /></div>
-                  <div className="flex flex-col gap-1"><StudentTopNav onNavigate={() => setOpen(false)} /></div>
+                  <div className="flex flex-col gap-2">
+                    <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Student Portal</p>
+                    <StudentTopNav vertical onNavigate={() => setOpen(false)} />
+                  </div>
                 </SheetContent>
               </Sheet>
               {userMenu}
             </div>
           </div>
         </header>
-        <main className="workspace-main mx-auto max-w-[1400px] px-5 py-8 sm:px-8"><Guard allow={allow}>{children}</Guard></main>
+        <main className="workspace-main mx-auto max-w-[1400px] px-4 py-6 sm:px-8 sm:py-8 pb-24 md:pb-8 w-full max-w-full overflow-x-hidden">
+          <Guard allow={allow}>{children}</Guard>
+        </main>
+        <StudentMobileBottomNav />
       </div>
     );
   }
 
   return (
-    <div className="glass-ambient min-h-screen bg-background">
+    <div className="glass-ambient min-h-screen w-full max-w-full overflow-x-hidden bg-background">
       <aside className="fixed inset-y-0 left-0 z-30 hidden lg:block"><SidebarContent /></aside>
-      <div className="lg:pl-[240px]">
+      <div className="lg:pl-[240px] w-full max-w-full overflow-x-hidden">
         <header className="workspace-header sticky top-0 z-20 flex h-[64px] items-center justify-between gap-3 border-b bg-card/90 px-4 backdrop-blur-md sm:px-6">
           <div className="flex min-w-0 items-center gap-3">
             <Sheet open={open} onOpenChange={setOpen}>
@@ -290,7 +337,7 @@ export function AppShell({ title, children, actions, allow }: { title: string; c
             {userMenu}
           </div>
         </header>
-        <main className="workspace-main mx-auto max-w-[1400px] px-5 py-8 sm:px-8"><Guard allow={allow}>{children}</Guard></main>
+        <main className="workspace-main mx-auto max-w-[1400px] px-4 py-6 sm:px-8 sm:py-8 w-full max-w-full overflow-x-hidden"><Guard allow={allow}>{children}</Guard></main>
       </div>
     </div>
   );

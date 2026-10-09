@@ -136,7 +136,7 @@ function AuthPage() {
   }
 
   return (
-    <div className="grid min-h-screen lg:grid-cols-2">
+    <div className="grid min-h-screen w-full max-w-full overflow-x-hidden lg:grid-cols-2">
       <div className="bg-hero relative hidden overflow-hidden p-12 text-navy-foreground lg:flex lg:flex-col lg:justify-between">
         <div className="grid-lines pointer-events-none absolute inset-0" />
         <div className="relative"><Brand light /></div>
@@ -154,8 +154,8 @@ function AuthPage() {
         </div>
         <p className="relative text-xs text-navy-muted">Code Carnival 2026 · Atmiya University</p>
       </div>
-      <div className="grid place-items-center px-4 py-10">
-      <div className="w-full max-w-md animate-rise">
+      <div className="grid place-items-center px-4 py-8 sm:py-10 w-full max-w-full overflow-x-hidden">
+      <div className="w-full max-w-md animate-rise overflow-hidden">
         <div className="mb-8 flex justify-center lg:hidden"><Brand /></div>
 
         {/* Role picker */}

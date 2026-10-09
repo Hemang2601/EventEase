@@ -46,7 +46,7 @@ function Landing() {
   const cta = user ? "/dashboard" : "/auth";
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden">
       {/* Hero */}
       <section className="bg-hero relative overflow-hidden text-navy-foreground">
         <div className="grid-lines pointer-events-none absolute inset-0" />
@@ -78,11 +78,11 @@ function Landing() {
               <Button asChild size="lg" variant="outline" className="h-12 border-navy-border bg-transparent px-7 text-base text-navy-foreground hover:bg-navy-2 hover:text-navy-foreground"><Link to="/explore">Explore events</Link></Button>
             </div>
             <form
-              className="mt-8 flex max-w-md gap-2"
+              className="mt-8 flex flex-col sm:flex-row max-w-md gap-2"
               onSubmit={(ev) => { ev.preventDefault(); const c = pass.trim().toUpperCase(); if (c) navigate({ to: "/ticket/$code", params: { code: c } }); }}
             >
-              <Input value={pass} onChange={(ev) => setPass(ev.target.value)} placeholder="Have a code? EE-XXXX-XXXX" maxLength={20} className="h-11 border-navy-border bg-navy-2 font-mono uppercase text-navy-foreground placeholder:text-navy-muted" aria-label="Find my pass" />
-              <Button type="submit" className="h-11">Find my pass</Button>
+              <Input value={pass} onChange={(ev) => setPass(ev.target.value)} placeholder="Have a code? EE-XXXX-XXXX" maxLength={20} className="h-11 flex-1 border-navy-border bg-navy-2 font-mono uppercase text-navy-foreground placeholder:text-navy-muted" aria-label="Find my pass" />
+              <Button type="submit" className="h-11 shrink-0">Find my pass</Button>
             </form>
           </div>
 
@@ -94,8 +94,8 @@ function Landing() {
               </div>
               <div className="mt-4 flex h-24 items-end gap-1.5">{[30, 45, 38, 60, 52, 75, 68, 88, 72, 95, 80, 62].map((h, i) => <span key={i} className="flex-1 rounded-t bg-primary/70" style={{ height: `${h}%` }} />)}</div>
             </div>
-            <div className="relative flex justify-center pt-4 sm:pt-24">
-              <div className="animate-floaty w-[300px]">
+            <div className="relative flex justify-center pt-4 sm:pt-24 max-w-full">
+              <div className="animate-floaty w-[300px] max-w-full">
                 <Ticket code="EE-7F3A-9C21" name="Aarav Mehta" eventTitle="Code Carnival 2026" actions={false} />
               </div>
             </div>

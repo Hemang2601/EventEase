@@ -127,10 +127,10 @@ export function Ticket({ code, name, email, eventTitle, meta, date, checkedInAt,
   }
 
   return (
-    <div className="animate-pop group mx-auto w-full max-w-[380px] transition-transform duration-300 hover:-translate-y-1">
+    <div className="animate-pop group mx-auto w-full max-w-[380px] overflow-hidden transition-transform duration-300 hover:-translate-y-1">
       <div className="ticket-notch overflow-hidden rounded-[22px] bg-elevated shadow-float ring-1 ring-border">
         {/* Header */}
-        <div className="relative overflow-hidden bg-navy px-6 pb-6 pt-5 text-navy-foreground">
+        <div className="relative overflow-hidden bg-navy px-5 sm:px-6 pb-5 sm:pb-6 pt-4 sm:pt-5 text-navy-foreground">
           <div className="pointer-events-none absolute -right-16 -top-16 size-48 rounded-full bg-primary/30 blur-3xl" />
           <div className="relative flex items-center justify-between">
             <BrandMark light />
@@ -138,53 +138,61 @@ export function Ticket({ code, name, email, eventTitle, meta, date, checkedInAt,
               <ShieldCheck className="size-3" /> Verified pass
             </span>
           </div>
-          <p className="relative mt-6 label-mono !text-navy-muted">Digital event pass</p>
-          <h3 className="relative mt-1 font-display text-2xl font-bold leading-tight">{eventTitle}</h3>
-          <div className="relative mt-5 flex items-end justify-between gap-3">
-            <div className="min-w-0">
+          <p className="relative mt-5 sm:mt-6 label-mono !text-navy-muted">Digital event pass</p>
+          <h3 className="relative mt-1 font-display text-xl sm:text-2xl font-bold leading-tight line-clamp-2">{eventTitle}</h3>
+          <div className="relative mt-4 sm:mt-5 flex items-end justify-between gap-3">
+            <div className="min-w-0 flex-1">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-navy-muted">Participant</p>
-              <p className="mt-0.5 truncate font-semibold tracking-tight">{name}</p>
+              <p className="mt-0.5 truncate text-sm sm:text-base font-semibold tracking-tight">{name}</p>
             </div>
-            <div className="text-right">
+            <div className="text-right shrink-0">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-navy-muted">Status</p>
-              <p className={`mt-0.5 font-semibold ${used ? "text-navy-muted" : "text-success"}`}>{used ? "Used" : "Registered"}</p>
+              <p className={`mt-0.5 text-xs sm:text-sm font-semibold ${used ? "text-navy-muted" : "text-success"}`}>{used ? "Used" : "Registered"}</p>
             </div>
           </div>
         </div>
 
         {/* Details */}
         {(date || meta || email) && (
-          <div className="space-y-2 px-6 py-4 font-mono text-xs text-muted-foreground">
-            {date && <p className="flex items-center gap-2"><CalendarDays className="size-3.5 text-primary" />{date}</p>}
-            {meta && <p className="flex items-center gap-2"><MapPin className="size-3.5 text-primary" />{meta}</p>}
-            {email && <p className="truncate">{email}</p>}
+          <div className="space-y-1.5 sm:space-y-2 px-5 sm:px-6 py-3.5 sm:py-4 font-mono text-xs text-muted-foreground">
+            {date && <p className="flex items-center gap-2"><CalendarDays className="size-3.5 text-primary shrink-0" /><span className="truncate">{date}</span></p>}
+            {meta && <p className="flex items-center gap-2"><MapPin className="size-3.5 text-primary shrink-0" /><span className="truncate">{meta}</span></p>}
+            {email && <p className="truncate text-muted-foreground/80">{email}</p>}
           </div>
         )}
 
         {/* Perforation / tear line */}
-        <div className="relative mx-6 border-t-2 border-dashed border-border">
+        <div className="relative mx-5 sm:mx-6 border-t-2 border-dashed border-border">
           <span aria-hidden className="absolute -left-9 -top-3 size-6 rounded-full bg-background" />
           <span aria-hidden className="absolute -right-9 -top-3 size-6 rounded-full bg-background" />
         </div>
 
         {/* QR stub */}
-        <div className="flex flex-col items-center px-6 py-6 text-center">
+        <div className="flex flex-col items-center px-5 sm:px-6 py-5 sm:py-6 text-center">
           <div ref={ref} className={`rounded-2xl qr-paper p-3 shadow-card ring-1 ring-border transition-transform duration-300 group-hover:scale-[1.03] ${used ? "opacity-40" : ""}`}>
             <QRCodeCanvas value={code} size={168} level="H" bgColor="#ffffff" fgColor="#07111F" marginSize={1} />
           </div>
-          <p className="mt-4 font-mono text-xl font-bold tabular-nums tracking-[0.2em] text-foreground">{code}</p>
+          <p className="mt-3.5 sm:mt-4 font-mono text-lg sm:text-xl font-bold tabular-nums tracking-[0.2em] text-foreground">{code}</p>
           {used ? (
-            <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-success-soft px-3 py-1.5 text-xs font-semibold text-success">
-              <CheckCircle2 className="size-4" /> Checked in at {new Date(checkedInAt ?? Date.now()).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+            <p className="mt-2.5 sm:mt-3 inline-flex items-center gap-1.5 rounded-full bg-success-soft px-3 py-1.5 text-xs font-semibold text-success">
+              <CheckCircle2 className="size-4 shrink-0" /> Checked in at {new Date(checkedInAt ?? Date.now()).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
             </p>
           ) : (
-            <p className="mt-2 text-xs text-muted-foreground">Show this QR at the gate · valid for one entry</p>
+            <p className="mt-1.5 sm:mt-2 text-xs text-muted-foreground">Show this QR at the gate · valid for one entry</p>
           )}
           {actions && (
-            <div className="mt-5 flex flex-wrap justify-center gap-2">
-              <Button variant="outline" size="sm" onClick={download}><Download /> Download pass</Button>
-              <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(code); toast.success("Code copied"); }}><Copy /> Copy</Button>
-              <Button asChild variant="outline" size="sm"><Link to="/ticket/$code" params={{ code }}><ExternalLink /> Open</Link></Button>
+            <div className="mt-4 sm:mt-5 grid grid-cols-3 gap-1.5 sm:gap-2 w-full">
+              <Button variant="outline" size="sm" onClick={download} className="h-9 px-1 sm:px-2.5 text-[11px] sm:text-xs">
+                <Download className="size-3.5 shrink-0" /> <span className="truncate">Download</span>
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(code); toast.success("Code copied"); }} className="h-9 px-1 sm:px-2.5 text-[11px] sm:text-xs">
+                <Copy className="size-3.5 shrink-0" /> <span className="truncate">Copy</span>
+              </Button>
+              <Button asChild variant="outline" size="sm" className="h-9 px-1 sm:px-2.5 text-[11px] sm:text-xs">
+                <Link to="/ticket/$code" params={{ code }}>
+                  <ExternalLink className="size-3.5 shrink-0" /> <span className="truncate">Open</span>
+                </Link>
+              </Button>
             </div>
           )}
         </div>
