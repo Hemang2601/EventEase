@@ -1,0 +1,104 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1791425546003,
+      "tag": "0000_eventease_schema",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791426400419,
+      "tag": "0001_scan_logs_gates_categories",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791426686248,
+      "tag": "0002_participant_self_view",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791431182737,
+      "tag": "0003_add_event_open_toggle",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791432161991,
+      "tag": "0004_roles_support_checkin_window",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791432201319,
+      "tag": "0005_staff_can_register_after_start",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791432747940,
+      "tag": "0006_event_photos",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791433460451,
+      "tag": "0007_event_zones_staff",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791433910131,
+      "tag": "0008_check_in_wrong_event",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791434235196,
+      "tag": "0009_tighten_function_access",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791437263987,
+      "tag": "0010_event_date_rules",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1791437286972,
+      "tag": "0011_reassign_zone_on_switch",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1791437578256,
+      "tag": "0012_unique_registration_locks",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1791442497021,
+      "tag": "0013_event_edit_requests",
+      "breakpoints": true
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.assign_participant_zone() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.admin_dismiss_request(uuid) FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.admin_set_role(uuid, public.app_role, boolean) FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.cancel_registration(uuid) FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.switch_registration(uuid, uuid) FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.check_in_participant(uuid, text, text) FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.set_participant_zone(uuid, uuid) FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.list_staff_candidates() FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.zone_overview(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.admin_dismiss_request(uuid), public.admin_set_role(uuid, public.app_role, boolean), public.cancel_registration(uuid), public.switch_registration(uuid, uuid), public.check_in_participant(uuid, text, text), public.set_participant_zone(uuid, uuid), public.list_staff_candidates(), public.zone_overview(uuid) TO authenticated;

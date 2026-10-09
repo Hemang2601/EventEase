@@ -1,0 +1,2 @@
+CREATE UNIQUE INDEX IF NOT EXISTS participants_event_email_unique ON public.participants (event_id, lower(email));
+CREATE UNIQUE INDEX IF NOT EXISTS participants_event_user_unique ON public.participants (event_id, user_id) WHERE user_id IS NOT NULL;

@@ -1,0 +1,4 @@
+- [x] Installable app (phone/Windows)
+- [x] Event photos: organizer photo + event cover, shown to students
+- [x] Redesign all inner student, organizer and admin pages with the selected premium direction; leave the front page and its shared visual appearance unchanged.
+- [x] Add Dark, Light and System choices across inner pages and accounts; refine the premium design with Premium Midnight Slate v2, preserving the approved front page.
