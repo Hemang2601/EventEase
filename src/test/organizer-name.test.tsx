@@ -8,11 +8,16 @@ vi.mock("@/integrations/supabase/client", () => ({
   supabase: { from: () => ({ select: () => ({ eq: mocks.eq }), insert: mocks.insert }) },
 }));
 vi.mock("@/components/ImageUpload", () => ({ ImageUpload: () => null }));
-vi.mock("@/lib/event-dates", () => ({
-  takenDatesQuery: () => ({ queryKey: ["taken"], queryFn: async () => [] }),
-  findDateClash: () => null,
-  nowLocalInput: () => "2026-01-01T00:00",
-}));
+vi.mock("@/lib/event-dates", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/event-dates")>();
+  return {
+    ...actual,
+    takenDatesQuery: () => ({ queryKey: ["taken"], queryFn: async () => [] }),
+    findDateClash: () => null,
+    findVenueClash: () => null,
+    nowLocalInput: () => "2026-01-01T00:00",
+  };
+});
 
 afterEach(() => { cleanup(); vi.clearAllMocks(); });
 

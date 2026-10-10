@@ -7,7 +7,7 @@ import { AppShell, EventPicker } from "@/components/AppShell";
 import { CreateEventDialog } from "@/components/CreateEventDialog";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { participantsQuery, scanLogsQuery, fmtDate } from "@/lib/events";
+import { participantsQuery, scanLogsQuery, fmtDate, fmtDateRange } from "@/lib/events";
 import { usePickedEvent } from "@/lib/use-picked-event";
 import { useAuth } from "@/lib/auth";
 import { categoryImage } from "@/lib/categories";
@@ -77,8 +77,10 @@ function Dashboard() {
   );
 
   const now = Date.now();
-  const live = event ? Math.abs(now - new Date(event.starts_at).getTime()) < 12 * 3600_000 : false;
-  const past = event ? new Date(event.starts_at).getTime() < now - 12 * 3600_000 : false;
+  const startTime = event?.starts_at ? new Date(event.starts_at).getTime() : 0;
+  const endTime = event?.ends_at ? new Date(event.ends_at).getTime() : (startTime ? startTime + 4 * 3600_000 : 0);
+  const live = !!event && startTime > 0 && now >= startTime && now <= endTime;
+  const past = !!event && endTime > 0 && now > endTime;
   const status = !event ? "" : !event.is_open ? "Closed" : live ? "Live" : past ? "Completed" : "Upcoming";
 
   return (
@@ -133,7 +135,7 @@ function Dashboard() {
                     </div>
                     <h2 className="mt-4 text-3xl font-bold leading-tight sm:text-[2.5rem]">{event.title}</h2>
                     <p className="mt-3 flex flex-wrap gap-4 text-sm text-navy-muted">
-                      <span className="flex items-center gap-1.5"><CalendarDays className="size-4" />{fmtDate(event.starts_at)}</span>
+                      <span className="flex items-center gap-1.5"><CalendarDays className="size-4" />{fmtDateRange(event.starts_at, event.ends_at)}</span>
                       {event.venue && <span className="flex items-center gap-1.5"><MapPin className="size-4" />{event.venue}</span>}
                     </p>
                     <div className="mt-6 max-w-sm">

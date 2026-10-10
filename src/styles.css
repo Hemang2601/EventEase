@@ -186,6 +186,33 @@
   border-radius: calc(var(--radius) + 4px);
   box-shadow: var(--shadow-card);
 }
+@utility glass-panel {
+  background: color-mix(in oklab, var(--card) 78%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid color-mix(in oklab, var(--border) 70%, transparent);
+  border-radius: calc(var(--radius) + 6px);
+  box-shadow: 0 8px 32px 0 color-mix(in oklab, var(--primary) 6%, transparent), inset 0 1px 0 oklch(1 0 0 / 0.18);
+}
+@utility glass-card {
+  background: color-mix(in oklab, var(--card) 82%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid color-mix(in oklab, var(--border) 60%, transparent);
+  border-radius: calc(var(--radius) + 4px);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  &:hover {
+    border-color: color-mix(in oklab, var(--primary) 50%, transparent);
+    box-shadow: 0 12px 36px -10px color-mix(in oklab, var(--primary) 22%, transparent), inset 0 1px 0 oklch(1 0 0 / 0.25);
+  }
+}
+@utility dark-glass {
+  background: color-mix(in oklab, var(--navy) 75%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid color-mix(in oklab, var(--navy-border) 60%, transparent);
+  box-shadow: 0 8px 32px 0 oklch(0 0 0 / 0.35), inset 0 1px 0 oklch(1 1 1 / 0.08);
+}
 @utility label-mono {
   font-family: var(--font-sans);
   font-size: 11px;
@@ -250,6 +277,49 @@
 @keyframes border-glow { 0%,100% { opacity: .5; } 50% { opacity: 1; } }
 @keyframes fade-scale { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: scale(1); } }
 @keyframes drift { 0%,100% { transform: translate(0,0); } 33% { transform: translate(14px,-18px); } 66% { transform: translate(-12px,10px); } }
+
+/* AppLoader keyframes & classes */
+@keyframes loader-orbit {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes loader-scan-line {
+  0% { top: 8%; opacity: 0.5; }
+  50% { top: 86%; opacity: 1; }
+  100% { top: 8%; opacity: 0.5; }
+}
+
+@keyframes loader-wave-move {
+  0% { transform: translateX(-120%); }
+  50% { transform: translateX(50%); }
+  100% { transform: translateX(220%); }
+}
+
+@keyframes loader-glow-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.25; }
+  50% { transform: scale(1.18); opacity: 0.65; }
+}
+
+.loader-orbit {
+  animation: loader-orbit 2.4s linear infinite;
+  will-change: transform;
+}
+
+.loader-scan {
+  animation: loader-scan-line 1.8s ease-in-out infinite;
+  will-change: top;
+}
+
+.loader-wave {
+  animation: loader-wave-move 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  will-change: transform;
+}
+
+.loader-glow {
+  animation: loader-glow-pulse 3.5s ease-in-out infinite;
+  will-change: transform, opacity;
+}
 
 /* Shine sweep across buttons/badges — put on a relative overflow-hidden element with a .shine-child span */
 @utility btn-shine {

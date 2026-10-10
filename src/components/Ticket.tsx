@@ -128,7 +128,7 @@ export function Ticket({ code, name, email, eventTitle, meta, date, checkedInAt,
 
   return (
     <div className="animate-pop group mx-auto w-full max-w-[380px] overflow-hidden transition-transform duration-300 hover:-translate-y-1">
-      <div className="ticket-notch overflow-hidden rounded-[22px] bg-elevated shadow-float ring-1 ring-border">
+      <div className="ticket-notch overflow-hidden rounded-[22px] glass-panel shadow-float ring-1 ring-border/80 backdrop-blur-xl">
         {/* Header */}
         <div className="relative overflow-hidden bg-navy px-5 sm:px-6 pb-5 sm:pb-6 pt-4 sm:pt-5 text-navy-foreground">
           <div className="pointer-events-none absolute -right-16 -top-16 size-48 rounded-full bg-primary/30 blur-3xl" />

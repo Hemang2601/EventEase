@@ -117,38 +117,35 @@ export function ImageUpload({
 
       let savedUrl = dataUrl;
 
-      // 2. Attempt uploading to Supabase Storage if user is signed in
-      if (userId) {
-        try {
-          const path = `${userId}/${crypto.randomUUID()}.jpg`;
-          const { data: upData, error: upError } = await supabase.storage
+      // 2. Attempt uploading to local storage
+      try {
+        const path = `${userId || "organizer"}/${crypto.randomUUID()}.jpg`;
+        const { data: upData, error: upError } = await supabase.storage
+          .from("event-images")
+          .upload(path, blob, {
+            contentType: "image/jpeg",
+            upsert: true,
+          });
+
+        if (!upError && upData?.path) {
+          const { data: pubData } = supabase.storage
             .from("event-images")
-            .upload(path, blob, {
-              contentType: "image/jpeg",
-              upsert: true,
-            });
+            .getPublicUrl(upData.path);
 
-          if (!upError && upData) {
-            // Check public URL first
-            const { data: pubData } = supabase.storage
-              .from("event-images")
-              .getPublicUrl(path);
-
-            if (pubData?.publicUrl) {
-              savedUrl = pubData.publicUrl;
-            }
-          } else if (upError) {
-            console.warn(
-              "Supabase storage upload notice (using optimized fallback):",
-              upError.message
-            );
+          if (pubData?.publicUrl) {
+            savedUrl = pubData.publicUrl;
           }
-        } catch (storageErr) {
-          console.warn("Storage exception (using optimized fallback):", storageErr);
+        } else if (upError) {
+          console.warn(
+            "Storage upload notice (using optimized fallback):",
+            upError.message
+          );
         }
+      } catch (storageErr) {
+        console.warn("Storage exception (using optimized fallback):", storageErr);
       }
 
-      // 3. Set the image URL (either CDN link or compressed base64)
+      // 3. Set the image URL (local /uploads link or compressed base64 fallback)
       onChange(savedUrl);
       toast.success(`${label} attached successfully`);
     } catch (err) {

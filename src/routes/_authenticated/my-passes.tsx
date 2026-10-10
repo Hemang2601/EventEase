@@ -14,7 +14,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/lib/auth";
-import { fmtDate } from "@/lib/events";
+import { fmtDate, fmtDateRange } from "@/lib/events";
 
 export const Route = createFileRoute("/_authenticated/my-passes")({
   head: () => ({
@@ -30,7 +30,7 @@ export const Route = createFileRoute("/_authenticated/my-passes")({
   component: Page,
 });
 
-type Pass = { id: string; code: string; full_name: string; email: string; checked_in_at: string | null; event_id: string; events: { title: string; venue: string | null; starts_at: string } | null };
+type Pass = { id: string; code: string; full_name: string; email: string; checked_in_at: string | null; event_id: string; events: { title: string; venue: string | null; starts_at: string; ends_at?: string | null } | null };
 
 function Page() {
   const { user } = useAuth();
@@ -45,7 +45,7 @@ function Page() {
     queryFn: async (): Promise<Pass[]> => {
       const { data, error } = await supabase
         .from("participants")
-        .select("id, code, full_name, email, checked_in_at, event_id, events(title, venue, starts_at)")
+        .select("id, code, full_name, email, checked_in_at, event_id, events(title, venue, starts_at, ends_at)")
         .or(`user_id.eq.${user!.id},email.ilike.${(user!.email ?? "").replace(/[,()%*]/g, "")}`)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -57,7 +57,7 @@ function Page() {
     queryKey: ["open-events"],
     enabled: !!switching,
     queryFn: async () => {
-      const { data, error } = await supabase.from("events").select("id, title, starts_at, capacity").eq("is_open", true).gt("starts_at", new Date().toISOString()).order("starts_at");
+      const { data, error } = await supabase.from("events").select("id, title, starts_at, ends_at, capacity").eq("is_open", true).gt("starts_at", new Date().toISOString()).order("starts_at");
       if (error) throw error;
       const withSeats = await Promise.all(
         data.map(async (e) => {
@@ -116,13 +116,14 @@ function Page() {
       ) : (
         <div className="grid gap-6 sm:gap-8 md:grid-cols-2 xl:grid-cols-3 justify-items-center">
           {passes.map((p) => {
-            const locked = !!p.checked_in_at || (p.events ? new Date(p.events.starts_at) <= new Date() : true);
+            const checkinOpensAt = p.events ? new Date(new Date(p.events.starts_at).getTime() - 30 * 60 * 1000) : null;
+            const locked = !!p.checked_in_at || (checkinOpensAt ? checkinOpensAt.getTime() <= Date.now() : true);
             return (
               <div key={p.id} className="w-full max-w-[380px] space-y-3">
                 <Ticket code={p.code} name={p.full_name} eventTitle={p.events?.title ?? "Event"}
-                  date={p.events ? fmtDate(p.events.starts_at) : undefined} meta={p.events?.venue ?? undefined} checkedInAt={p.checked_in_at} />
+                  date={p.events ? fmtDateRange(p.events.starts_at, p.events.ends_at) : undefined} meta={p.events?.venue ?? undefined} checkedInAt={p.checked_in_at} />
                 {locked ? (
-                  <p className="flex items-center justify-center gap-2 text-xs text-muted-foreground py-1"><Lock size={13} /> {p.checked_in_at ? "Checked in — pass used" : "Event started — changes locked"}</p>
+                  <p className="flex items-center justify-center gap-2 text-xs text-muted-foreground py-1"><Lock size={13} /> {p.checked_in_at ? "Checked in — pass used" : "Check-in active — changes locked"}</p>
                 ) : (
                   <div className="grid grid-cols-2 gap-2">
                     <Button variant="outline" size="sm" className="h-9 sm:h-10 text-xs sm:text-sm" onClick={() => { setSwitching(p); setTarget(""); }}>
@@ -154,7 +155,7 @@ function Page() {
       )}
 
       <Dialog open={!!switching} onOpenChange={(o) => !o && setSwitching(null)}>
-        <DialogContent className="panel border-border w-[calc(100vw-32px)] sm:max-w-md p-5 sm:p-6 rounded-2xl">
+        <DialogContent className="glass-panel border-border w-[calc(100vw-32px)] sm:max-w-md p-5 sm:p-6 rounded-2xl backdrop-blur-xl">
           <DialogHeader>
             <DialogTitle>Change event</DialogTitle>
             <DialogDescription>Move your seat from “{switching?.events?.title}” to another open event. You'll get a new code.</DialogDescription>
@@ -162,18 +163,25 @@ function Page() {
           <Select value={target} onValueChange={setTarget}>
             <SelectTrigger><SelectValue placeholder={openEvents.isLoading ? "Loading…" : "Pick an event"} /></SelectTrigger>
             <SelectContent>
-              {(openEvents.data ?? []).filter((e) => e.id !== switching?.event_id).map((e) => (
-                <SelectItem key={e.id} value={e.id} disabled={e.seatsLeft === 0}>
-                  <span className="flex w-full items-center justify-between gap-3">
-                    <span>{e.title} · {fmtDate(e.starts_at)}</span>
-                    {e.seatsLeft === 0 ? (
-                      <span className="text-xs font-semibold text-destructive">Full — no seats</span>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">{e.seatsLeft} seat{e.seatsLeft === 1 ? "" : "s"} left</span>
-                    )}
-                  </span>
-                </SelectItem>
-              ))}
+              {(openEvents.data ?? []).filter((e) => e.id !== switching?.event_id).map((e) => {
+                const regDeadline = new Date(e.starts_at).getTime() - 30 * 60 * 1000;
+                const checkinActive = Date.now() >= regDeadline;
+                const disabled = e.seatsLeft === 0 || checkinActive;
+                return (
+                  <SelectItem key={e.id} value={e.id} disabled={disabled}>
+                    <span className="flex w-full items-center justify-between gap-3">
+                      <span>{e.title} · {fmtDateRange(e.starts_at, e.ends_at)}</span>
+                      {checkinActive ? (
+                        <span className="text-xs font-semibold text-amber">Check-in started · Closed</span>
+                      ) : e.seatsLeft === 0 ? (
+                        <span className="text-xs font-semibold text-destructive">Full — no seats</span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">{e.seatsLeft} seat{e.seatsLeft === 1 ? "" : "s"} left</span>
+                      )}
+                    </span>
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
           {targetEvent && targetEvent.seatsLeft === 0 && (

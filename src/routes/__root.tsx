@@ -22,6 +22,7 @@ import { SplashScreen } from "@/components/SplashScreen";
 import { ThemeProvider, ThemeControl, useTheme } from "@/components/ThemeControl";
 import { BrandMark } from "@/components/Brand";
 import { Button } from "@/components/ui/button";
+import { AppLoader, RootPendingScreen, TopNavigationProgress } from "@/components/AppLoader";
 
 function NotFoundComponent() {
   return (
@@ -50,13 +51,9 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
   const [retrying, setRetrying] = useState(true);
   const [attempts, setAttempts] = useState(0);
 
-  // 1. If this error is a redirect, show a spinner while router navigates
+  // 1. If this error is a redirect, show a branded loader while router navigates
   if (isRedirect(error)) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <Loader2 className="size-8 animate-spin text-primary" />
-      </div>
-    );
+    return <AppLoader fullscreen message="Navigating…" submessage="Preparing your destination" />;
   }
 
   // 2. Handle dynamic chunk import failures (e.g. stale cache or new deployment)
@@ -101,15 +98,11 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
   // While retrying, show a sleek branded EventEase loader
   if (retrying) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
-        <div className="flex flex-col items-center gap-4 text-center animate-pulse">
-          <BrandMark />
-          <div className="mt-2 flex items-center gap-2.5 rounded-full border bg-card px-4 py-2 text-xs font-medium text-muted-foreground shadow-sm">
-            <Loader2 className="size-4 animate-spin text-primary" />
-            <span>Loading, please wait…</span>
-          </div>
-        </div>
-      </div>
+      <AppLoader
+        fullscreen
+        message="Connecting to EventEase…"
+        submessage="Restoring workspace and verifying session"
+      />
     );
   }
 
@@ -184,6 +177,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   }),
   shellComponent: RootShell,
   component: RootComponent,
+  pendingComponent: RootPendingScreen,
   notFoundComponent: NotFoundComponent,
   errorComponent: ErrorComponent,
 });
@@ -214,8 +208,6 @@ function ThemedRoot() {
   const standalone = pathname === "/auth" || pathname.startsWith("/register/") || pathname.startsWith("/ticket/");
   const router = useRouter();
 
-  const isNavigating = useRouterState({ select: (s) => s.status === "pending" });
-
   useEffect(() => {
     const { data } = supabase.auth.onAuthStateChange((event) => {
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
@@ -227,11 +219,7 @@ function ThemedRoot() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {isNavigating && (
-        <div aria-hidden className="fixed inset-x-0 top-0 z-[9999] h-1 overflow-hidden bg-primary/20">
-          <div className="h-full w-full origin-left bg-gradient-brand animate-grow" />
-        </div>
-      )}
+      <TopNavigationProgress />
       <SplashScreen />
       <div className={inner ? "inner-theme relative min-h-screen w-full max-w-full overflow-x-hidden" : "relative min-h-screen w-full max-w-full overflow-x-hidden"} data-theme={resolved}><Outlet />{(!inner || standalone) && <div className={inner ? "theme-floating" : "theme-floating theme-floating--landing"}><ThemeControl /></div>}</div>
       <Toaster theme={inner ? resolved : "light"} position="top-center" richColors />

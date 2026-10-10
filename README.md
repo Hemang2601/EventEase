@@ -35,21 +35,22 @@ EventEase is one real-time platform: organizers create events with capacity, stu
 | **Organizer** | Create / edit (with admin approval) / close / delete events, halls, participants, camera + manual check-in (only own hall), analytics, security scan log, support inbox, CSV export. |
 | **Admin** | Everything + approve/reject organizer requests and event-edit requests, create/convert organizers, assign multiple organizers to halls, manage roles, live online users. |
 
-## 4. Business rules (enforced in database)
+## 4. Business rules (enforced in database & services)
 
-* One event per calendar day (India time); no event in the past; capacity ≥ current registrations (`validate_event` trigger).
-* One registration per student per event and per day; atomic last-seat protection (locked transaction).
+* One event per calendar day (India time); no event in the past; capacity ≥ current registrations (`validateEvent`).
+* One registration per student per event and per day; atomic seat protection.
 * Check-in once only → second scan = **Already checked in** with original time.
 * Wrong event / wrong hall / fake code / too early → rejected and logged.
 * Check-in opens N minutes before start (default 60).
 * Organizer event edit: requires admin approval, one save per approval, then re-locked.
-* Row-Level Security on every table; roles stored in `user_roles`, checked by `has_role()`.
+* Role security on every endpoint; roles stored in `user_roles`, verified in backend services.
 
 ## 5. Tech stack
 
-* **Frontend:** React 19, TanStack Start / Router / Query, Vite 7, TypeScript
+* **Frontend:** React 19, TanStack Start / Router / Query, Vite 8, TypeScript
 * **Styling:** Tailwind CSS v4 + shadcn/ui, glass / dark / light themes, React Three Fiber 3D icons
-* **Backend:** PostgreSQL + Auth + Realtime + Storage (Supabase-compatible, via Lovable Cloud)
+* **Database:** **MongoDB** (running locally on your PC at `mongodb://127.0.0.1:27017/eventease`)
+* **Backend:** Express API server + MongoDB driver with built-in auto-seeding & procedures
 * **Libraries:** qrcode.react (QR), html5-qrcode (camera scan), zod, recharts, sonner
 * **PWA:** installable (manifest + icons)
 
@@ -57,8 +58,11 @@ EventEase is one real-time platform: organizers create events with capacity, stu
 
 ```
 backend/
-  schema.sql        -> all tables, enums, SQL functions, triggers, RLS policies
-  demo-data.sql     -> demo events, halls, participants, support tickets
+  mongo.ts          -> MongoDB connection manager & automatic index generation
+  seed.ts           -> Auto-seed script for demo events, users, passes, and halls
+  services.ts       -> Business logic (registration, gate check-in, tickets, roles)
+  app.ts            -> Express API router (/api/auth, /api/rpc, /api/data, /api/presence)
+  server.ts         -> Standalone server runner (listening on port 5000)
 src/
   routes/           -> pages (file-based routing)
     index.tsx             /               landing page
@@ -71,55 +75,56 @@ src/
       security, support, admin, profile, help, rules, my-passes
   components/       -> AppShell, Ticket, CheckInPanel, ZonesPanel, dialogs, ee/ UI kit
   lib/              -> auth, roles, events, presence, zones, picked-event helpers
-  integrations/     -> backend client
+  integrations/     -> local database client adapter (connects to local MongoDB)
   styles.css        -> design tokens (colors, fonts, glass, themes)
 public/             -> icons, manifest (PWA)
 
 ```
 
-## 7. Database
+## 7. Database (MongoDB)
 
-Tables: `events`, `participants`, `scan_logs`, `event_zones` (halls), `zone_staff`, `user_roles`, `profiles`, `organizer_requests`, `event_edit_requests`, `support_tickets` / messages, etc. (see `backend/schema.sql`).
+Collections in `eventease`:
+* `users` & `profiles` – account details, credentials & user info
+* `user_roles` – access permissions (admin, organizer, student)
+* `events` – title, dates, capacity, venue, banners, edit locks
+* `participants` – attendee registrations with unique QR codes (`EE-XXXXXX`)
+* `event_zones` & `zone_staff` – hall division and staff hall permissions
+* `scan_logs` – gate scan audit trail (success, duplicate, wrong event, too early)
+* `support_tickets` & `event_edit_requests` – help requests & event change requests
 
-Key SQL functions:
-
-* `register_participant` – validates, checks capacity & duplicates, generates unique code (atomic)
-* `check_in_participant` – organizer/hall-only; returns success / duplicate / invalid / wrong hall / too early
-* `get_ticket` – public pass lookup by code
-* `event_stats` – registration & attendance counts
-* `has_role` – role check used by RLS
+Key services:
+* `registerParticipant` – validates, checks capacity & duplicates, generates unique code
+* `checkInParticipant` – gate/hall-only check; returns success / duplicate / invalid / wrong hall / too early
+* `getTicket` – public pass lookup by code
+* `getStats` – live registration & attendance counts
 
 ## 8. Run locally
 
-Requirements: Node 20+ or Bun.
+Requirements: Node 20+ or Bun, and MongoDB running on your PC.
 
 ```bash
-bun install         # or npm install
-bun run dev         # http://localhost:8080
-bun run build       # production build
-bun run test        # tests
-
+npm install         # Install dependencies
+npm run dev         # Starts frontend + local MongoDB backend (http://localhost:8080)
 ```
 
-`.env` must contain:
+Optional commands:
+```bash
+npm run server      # Run standalone backend server on port 5000
+npm run seed        # Re-populate / verify demo data in MongoDB
+npm test            # Run unit tests
+npm run build       # Production build
+```
+
+`.env` configuration:
 
 ```env
-VITE_SUPABASE_URL=...
-VITE_SUPABASE_PUBLISHABLE_KEY=...
-VITE_SUPABASE_PROJECT_ID=...
-
+MONGODB_URI="mongodb://127.0.0.1:27017/eventease"
+PORT=5000
+VITE_API_URL="/api"
 ```
 
-*(The included `.env` points to the live project backend, so the app works immediately.)*
 
-### Own backend (optional)
-
-1. Create a new Supabase/Postgres project.
-2. Run `backend/schema.sql`, then `backend/demo-data.sql` in the SQL editor.
-3. Create a public bucket for event images, enable Email + Google auth.
-4. Put the new URL / keys in `.env`.
-
-## 9. Demo scenario (for judges)
+## 9. Demo scenario (for judges / presentation)
 
 1. Login as Organizer → **New event** (capacity e.g. 50).
 2. Login as Student → Explore → Register → QR pass appears.

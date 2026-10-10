@@ -12,15 +12,16 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CATEGORIES, categoryImage } from "@/lib/categories";
-import { fmtDate } from "@/lib/events";
+import { fmtDate, fmtDateRange } from "@/lib/events";
 import { AppShell } from "@/components/AppShell";
 import { useAuth } from "@/lib/auth";
 import { useRoles } from "@/lib/roles";
 
 type ExploreEvent = {
-  id: string; title: string; venue: string | null; starts_at: string; capacity: number;
+  id: string; title: string; venue: string | null; starts_at: string; ends_at?: string | null; capacity: number;
   category: string; description: string | null; cover_url: string | null;
   host_photo_url: string | null; host_name: string | null; is_open: boolean;
+  checkin_opens_minutes?: number;
   registered: number;
 };
 
@@ -51,24 +52,29 @@ function Explore() {
   const [cat, setCat] = useState<string>("All");
   const events = useQuery({
     queryKey: ["events", "explore"],
+    staleTime: 30_000,
     queryFn: async (): Promise<ExploreEvent[]> => {
       const since = new Date().toISOString();
       const { data, error } = await supabase
         .from("events")
-        .select("id, title, venue, starts_at, capacity, category, description, cover_url, host_photo_url, host_name, is_open")
+        .select("id, title, venue, starts_at, ends_at, capacity, category, description, cover_url, host_photo_url, host_name, is_open, checkin_opens_minutes")
         .gte("starts_at", since)
         .order("starts_at")
         .limit(60);
       if (error) throw error;
       const rows = data ?? [];
-      const seats = await Promise.all(
-        rows.map(async (r) => {
-          const { data: s, error: se } = await supabase.rpc("event_stats", { _event_id: r.id });
-          if (se) throw se;
-          return Number(s?.[0]?.registered ?? 0);
-        }),
-      );
-      return rows.map((r, i) => ({ ...r, registered: seats[i] ?? 0 }));
+      if (rows.length === 0) return [];
+
+      // Single batch call instead of N individual calls
+      const ids = rows.map((r) => r.id);
+      const { data: statsMap } = await supabase.rpc("batch_event_stats", { _event_ids: ids });
+      const counts: Record<string, number> = {};
+      if (statsMap && typeof statsMap === "object" && !Array.isArray(statsMap)) {
+        for (const [eid, s] of Object.entries(statsMap as Record<string, any>)) {
+          counts[eid] = Number(s?.registered ?? 0);
+        }
+      }
+      return rows.map((r) => ({ ...r, registered: counts[r.id] ?? 0 }));
     },
   });
   const list = useMemo(() => (events.data ?? []).filter((e) =>
@@ -76,7 +82,8 @@ function Explore() {
 
   const { user } = useAuth();
   const { isAdmin, isOrganizer, loading: rolesLoading } = useRoles();
-  const signedInStudent = !!user && !rolesLoading && !isAdmin && !isOrganizer;
+  // If user is logged in, default to student view unless explicitly confirmed as admin/organizer
+  const signedInStudent = !!user && (!rolesLoading ? (!isAdmin && !isOrganizer) : true);
   const qc = useQueryClient();
   const [regEvent, setRegEvent] = useState<ExploreEvent | null>(null);
   const [doneCode, setDoneCode] = useState<string | null>(null);
@@ -136,7 +143,7 @@ function Explore() {
               </div>
             </div>
             <div className="glass-tile flex items-center justify-between px-3.5 py-2.5 sm:px-4 sm:py-3 text-xs text-muted-foreground">
-              <span>{events.isLoading ? "Loading events…" : `Showing ${list.length} ${list.length === 1 ? "event" : "events"}`}</span>
+              <span>{events.isLoading ? "Loading events…" : events.isError ? "Error loading events" : `Showing ${list.length} ${list.length === 1 ? "event" : "events"}`}</span>
               <CalendarDays className="size-4 text-electric" />
             </div>
           </div>
@@ -147,10 +154,16 @@ function Explore() {
           <div className="glass-field" aria-hidden />
           <div className="relative z-10">
             <p className="mb-5 text-sm text-muted-foreground">
-              {events.isLoading ? "Loading events…" : `${list.length} upcoming ${list.length === 1 ? "event" : "events"}`}
+              {events.isLoading ? "Loading events…" : events.isError ? "Could not load events" : `${list.length} upcoming ${list.length === 1 ? "event" : "events"}`}
             </p>
             {events.isLoading ? (
               <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-96 rounded-xl" />)}</div>
+            ) : events.isError ? (
+              <div className="glass-tile flex flex-col items-center gap-4 p-14 text-center">
+                <p className="text-base font-semibold text-destructive">Failed to load events</p>
+                <p className="text-sm text-muted-foreground">Could not connect to the server. Make sure the app is running and refresh.</p>
+                <Button variant="outline" onClick={() => events.refetch()}>Retry</Button>
+              </div>
             ) : !list.length ? (
               <p className="glass-tile p-14 text-center text-muted-foreground">No upcoming events found.</p>
             ) : (
@@ -160,17 +173,30 @@ function Explore() {
                   const full = seatsLeft === 0;
                   const pct = e.capacity ? Math.min(100, Math.round((e.registered / e.capacity) * 100)) : 0;
                   const registered = myRegs.data?.has(e.id);
-                  const status = registered ? "Registered" : !e.is_open ? "Closed" : full ? "Full" : "Open";
+                  const checkinMinutes = typeof e.checkin_opens_minutes === "number" ? e.checkin_opens_minutes : 30;
+                  const checkinOpensAt = new Date(new Date(e.starts_at).getTime() - checkinMinutes * 60 * 1000);
+                  const isCheckInStarted = Date.now() >= checkinOpensAt.getTime();
+                  const isOpen = e.is_open !== false;
+                  const isRegClosed = !isOpen || isCheckInStarted;
+                  const status = registered
+                    ? "Registered"
+                    : isCheckInStarted
+                      ? "Check-in Live"
+                      : !isOpen
+                        ? "Closed"
+                        : full
+                          ? "Full"
+                          : "Open";
                   const tone = registered
                     ? "text-success"
-                    : !e.is_open || full
+                    : isRegClosed || full
                       ? "text-amber"
                       : "text-success";
                   return (
                     <article
                       key={e.id}
                       onMouseMove={trackGlass}
-                      className="event-tile glass-tile animate-rise flex flex-col overflow-hidden max-w-full"
+                      className="event-tile glass-tile glass-card animate-rise flex flex-col overflow-hidden max-w-full"
                       style={{ animationDelay: `${i * 50}ms` }}
                     >
                       <div className="relative aspect-video shrink-0 overflow-hidden rounded-t-xl">
@@ -185,7 +211,7 @@ function Explore() {
                         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
                         <span className="glass-chip absolute left-4 top-4 rounded-md px-3 py-1.5 text-[11px] font-semibold">{e.category}</span>
                         <span className={`glass-chip absolute right-4 top-4 inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[11px] font-semibold ${tone}`}>
-                          {!e.is_open && !registered ? <Lock className="size-3" /> : <span className={`size-1.5 rounded-full ${registered || (!e.is_open || full) ? "bg-amber" : "bg-success"}`} />}
+                          {!isOpen && !registered ? <Lock className="size-3" /> : <span className={`size-1.5 rounded-full ${registered || (!isOpen || full) ? "bg-amber" : "bg-success"}`} />}
                           {status}
                         </span>
                       </div>
@@ -194,9 +220,9 @@ function Explore() {
                         <h3 className="text-xl font-semibold">{e.title}</h3>
 
                         <div className="glass-meta mt-4">
-                          <div title={fmtDate(e.starts_at)}>
-                            <CalendarDays className="size-3.5" />
-                            <span>{fmtDate(e.starts_at)}</span>
+                          <div title={fmtDateRange(e.starts_at, e.ends_at)}>
+                            <CalendarDays className="size-3.5 shrink-0" />
+                            <span className="truncate">{fmtDateRange(e.starts_at, e.ends_at)}</span>
                           </div>
                           <div title={e.venue ?? "Venue to be announced"}>
                             <MapPin className="size-3.5" />
@@ -223,7 +249,9 @@ function Explore() {
                           <div className="w-full sm:w-auto shrink-0">
                             {registered ? (
                               <Button className="h-10 w-full sm:w-auto" variant="outline" disabled><BadgeCheck /> Already registered</Button>
-                            ) : !e.is_open ? (
+                            ) : isCheckInStarted ? (
+                              <Button className="h-10 w-full sm:w-auto" variant="outline" disabled>Check-in started · Closed</Button>
+                            ) : !isOpen ? (
                               <Button className="h-10 w-full sm:w-auto" variant="outline" disabled>Registrations closed</Button>
                             ) : full ? (
                               <Button className="h-10 w-full sm:w-auto" variant="outline" disabled>Event full</Button>
@@ -250,13 +278,13 @@ function Explore() {
       </div>
 
       <Dialog open={!!regEvent} onOpenChange={(open) => { if (!open) { setRegEvent(null); setDoneCode(null); } }}>
-        <DialogContent className="max-h-[92vh] overflow-y-auto w-[calc(100vw-32px)] sm:max-w-lg p-5 sm:p-6">
+        <DialogContent className="glass-panel max-h-[92vh] overflow-y-auto w-[calc(100vw-32px)] sm:max-w-lg p-5 sm:p-6 backdrop-blur-xl">
           {regEvent && (
             <>
               <DialogHeader>
                 <DialogTitle className="text-xl">{doneCode ? "You're in!" : `Register — ${regEvent.title}`}</DialogTitle>
                 <DialogDescription className="flex flex-wrap gap-3 pt-1 text-xs">
-                  <span className="flex items-center gap-1"><CalendarDays className="size-3.5" />{fmtDate(regEvent.starts_at)}</span>
+                  <span className="flex items-center gap-1"><CalendarDays className="size-3.5" />{fmtDateRange(regEvent.starts_at, regEvent.ends_at)}</span>
                   {regEvent.venue && <span className="flex items-center gap-1"><MapPin className="size-3.5" />{regEvent.venue}</span>}
                   <span className="flex items-center gap-1"><Users className="size-3.5" />{regEvent.registered} / {regEvent.capacity} booked</span>
                 </DialogDescription>
@@ -272,15 +300,23 @@ function Explore() {
                     <Button asChild className="flex-1"><Link to="/my-passes">View my passes</Link></Button>
                   </div>
                 </div>
-              ) : profile.data ? (
-                <RegisterForm eventId={regEvent.id} eventTitle={regEvent.title} prefill={profile.data}
+              ) : Date.now() >= new Date(regEvent.starts_at).getTime() - (regEvent.checkin_opens_minutes ?? 30) * 60 * 1000 ? (
+                <div className="space-y-3 py-6 text-center">
+                  <p className="text-base font-semibold text-amber">Registrations are closed</p>
+                  <p className="text-xs text-muted-foreground">Check-in has started for this event. Registrations close automatically 30 minutes before event start.</p>
+                  <Button variant="outline" className="mt-2 w-full" onClick={() => setRegEvent(null)}>Close</Button>
+                </div>
+              ) : (
+                <RegisterForm
+                  eventId={regEvent.id}
+                  eventTitle={regEvent.title}
+                  prefill={profile.data ?? (user ? { full_name: (user.user_metadata?.full_name as string) || "", email: user.email || "" } : undefined)}
                   onRegistered={(t) => {
                     setDoneCode(t.code);
                     qc.invalidateQueries({ queryKey: ["my-registrations", user?.id] });
                     qc.invalidateQueries({ queryKey: ["events", "explore"] });
-                  }} />
-              ) : (
-                <Skeleton className="h-48 rounded-xl" />
+                  }}
+                />
               )}
             </>
           )}

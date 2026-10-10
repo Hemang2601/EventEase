@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Loader2, UserPlus } from "lucide-react";
@@ -24,19 +24,35 @@ export function RegisterForm({ eventId, eventTitle = "", disabled, prefill, onRe
   onRegistered: (t: RegisteredTicket) => void;
 }) {
   const [busy, setBusy] = useState(false);
+  const [agreedToRules, setAgreedToRules] = useState(false);
   const [form, setForm] = useState({
     full_name: prefill?.full_name ?? "",
     email: prefill?.email ?? "",
     phone: "",
     department: "",
   });
-  const locked = !!prefill;
+
+  useEffect(() => {
+    if (prefill) {
+      setForm((prev) => ({
+        ...prev,
+        full_name: prefill.full_name || prev.full_name,
+        email: prefill.email || prev.email,
+      }));
+    }
+  }, [prefill?.full_name, prefill?.email]);
+
+  const locked = !!prefill?.email;
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
 
   async function submit(e: FormEvent) {
     e.preventDefault();
     if (busy) return;
+    if (!agreedToRules) {
+      toast.error("Please confirm that you have read and agree to the event rules");
+      return;
+    }
     const parsed = schema.safeParse(form);
     if (!parsed.success) { toast.error(parsed.error.issues[0]?.message ?? "Invalid input"); return; }
     setBusy(true);
@@ -76,9 +92,24 @@ export function RegisterForm({ eventId, eventTitle = "", disabled, prefill, onRe
           <Input id="rd" value={form.department} onChange={set("department")} placeholder="CE / IT / MCA" />
         </div>
       </div>
-      <Button type="submit" variant="hero" className="h-11 w-full" disabled={busy || disabled}>
+
+      <div className="flex items-start gap-3 rounded-xl border border-border/80 bg-muted/40 p-3.5 transition-colors hover:border-primary/40">
+        <input
+          type="checkbox"
+          id="agree-event-rules"
+          checked={agreedToRules}
+          onChange={(e) => setAgreedToRules(e.target.checked)}
+          className="mt-0.5 size-4 rounded border-border text-primary focus:ring-primary accent-primary cursor-pointer"
+          required
+        />
+        <label htmlFor="agree-event-rules" className="text-xs text-foreground cursor-pointer leading-relaxed select-none">
+          I have read and agree to all <strong>Event Rules & Entry Guidelines</strong>. I understand that my unique QR pass is strictly non-transferable and must be presented at the gate.
+        </label>
+      </div>
+
+      <Button type="submit" variant="hero" className="h-11 w-full" disabled={busy || disabled || !agreedToRules}>
         {busy ? <Loader2 className="animate-spin" /> : <UserPlus />}
-        {disabled ? "Event is full" : "Register & generate code"}
+        {disabled ? "Event is full" : "Accept rules & generate pass"}
       </Button>
     </form>
   );

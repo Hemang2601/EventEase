@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePickedEvent } from "@/lib/use-picked-event";
-import { fmtDate, type EventWithStats } from "@/lib/events";
+import { fmtDate, fmtDateRange, type EventWithStats } from "@/lib/events";
 import { categoryImage } from "@/lib/categories";
 import { PageHeader, StatusPill } from "@/components/ee/index";
 import { Reveal } from "@/components/ee/dashboard-widgets";
@@ -30,8 +30,10 @@ export const Route = createFileRoute("/_authenticated/events/")({
 
 function statusOf(e: EventWithStats) {
   const now = Date.now();
-  const live = Math.abs(now - new Date(e.starts_at).getTime()) < 12 * 3600_000;
-  const past = new Date(e.starts_at).getTime() < now - 12 * 3600_000;
+  const startTime = e.starts_at ? new Date(e.starts_at).getTime() : 0;
+  const endTime = e.ends_at ? new Date(e.ends_at).getTime() : (startTime ? startTime + 4 * 3600_000 : 0);
+  const live = startTime > 0 && now >= startTime && now <= endTime;
+  const past = endTime > 0 && now > endTime;
   if (!e.is_open) return "closed";
   if (live) return "live";
   if (past) return "completed";
@@ -56,11 +58,11 @@ function FeaturedEvent({ e }: { e: EventWithStats }) {
           </div>
           <h2 className="mt-4 text-3xl font-bold leading-tight sm:text-4xl">{e.title}</h2>
           <p className="mt-3 flex flex-wrap gap-4 text-sm text-navy-muted">
-            <span className="flex items-center gap-1.5"><CalendarDays className="size-4" />{fmtDate(e.starts_at)}</span>
+            <span className="flex items-center gap-1.5"><CalendarDays className="size-4" />{fmtDateRange(e.starts_at, e.ends_at)}</span>
             {e.venue && <span className="flex items-center gap-1.5"><MapPin className="size-4" />{e.venue}</span>}
           </p>
         </div>
-        <div className="grid shrink-0 grid-cols-2 gap-4 sm:w-80">
+        <div className="grid shrink-0 grid-cols-2 gap-4 sm:w-80 dark-glass p-4 rounded-2xl border border-white/10 backdrop-blur-md">
           <div>
             <div className="mb-1.5 flex justify-between font-mono text-xs text-navy-muted"><span>Registered</span><span className="font-semibold text-navy-foreground">{e.registered}/{e.capacity}</span></div>
             <div className="h-2 overflow-hidden rounded-full bg-navy-border"><div className="h-full rounded-full bg-primary transition-all duration-700" style={{ width: `${regPct}%` }} /></div>
@@ -82,11 +84,17 @@ function EventsPage() {
   const [sort, setSort] = useState<string>("date");
 
   const filtered = useMemo(() => {
-    let list = events.filter((e) => e.title.toLowerCase().includes(q.trim().toLowerCase()));
+    const query = q.trim().toLowerCase();
+    let list = events.filter((e) => (e.title || "").toLowerCase().includes(query));
     if (status !== "all") list = list.filter((e) => statusOf(e) === status);
-    list = [...list].sort((a, b) =>
-      sort === "date" ? new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime() : b.registered - a.registered,
-    );
+    list = [...list].sort((a, b) => {
+      if (sort === "date") {
+        const timeA = a.starts_at ? new Date(a.starts_at).getTime() : 0;
+        const timeB = b.starts_at ? new Date(b.starts_at).getTime() : 0;
+        return timeA - timeB;
+      }
+      return (b.registered ?? 0) - (a.registered ?? 0);
+    });
     return list;
   }, [events, q, status, sort]);
 
@@ -94,7 +102,7 @@ function EventsPage() {
   const rest = filtered.filter((e) => e.id !== featured?.id);
 
   return (
-    <AppShell allow={["organizer"]} title="Events" actions={user && <CreateEventDialog userId={user.id} />}>
+    <AppShell allow={["organizer", "admin"]} title="Events" actions={user && <CreateEventDialog userId={user.id} />}>
       <PageHeader title="Events" subtitle="Manage every event from one place." />
 
       <div className="mb-6 flex flex-wrap items-center gap-3">

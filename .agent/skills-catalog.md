@@ -1,6 +1,6 @@
 # AI Agent Skills — Full Catalog
 
-> Auto-generated. Total: **2665 skills** across **128 categories**.
+> Auto-generated. Total: **2671 skills** across **129 categories**.
 > When asked "what skill should I use?", browse this file and suggest the most relevant skill IDs.
 > Install a skill: `Ctrl+Shift+/` → search for the skill ID → press Enter.
 
@@ -567,6 +567,7 @@ applications.
 - **puppeteer-skill**: Generates Puppeteer scripts for browser automation, scraping, and PDF generation. Triggers on: "Puppeteer", "headless Chrome", "page.goto", "scrape", "PDF generation". _(risk: critical)_
 - **reverse-browser-automation**: Automate browsers (Playwright) and Windows desktop applications (UI automation) for reverse-engineering evidence collection, UI-driven workflows, and network observation during analysis. _(risk: safe)_
 - **skyvern-browser-automation**: AI-powered browser automation — navigate sites, fill forms, extract structured data, log in with stored credentials, and build reusable workflows. _(risk: safe)_
+- **jet-browser**: Verify or integrate Jet Browser when a project needs isolated WPE WebKit sessions, native input, screenshots, ordered JSONL automation, or reproducible runtime checks. _(risk: critical)_
 
 ## business
 
@@ -1471,6 +1472,7 @@ api docs, reference,... _(risk: unknown)_
 - **unship**: Compare AI agent-made UI variants locally in a real app, then keep one and clean up unused temporary code. _(risk: critical)_
 - **using-lwc**: Use when project decisions, code structure, research, incidents, or verified context must survive future coding-agent sessions through LWC memory and graph indexes. _(risk: critical)_
 - **wp-site-health-auditor**: Turns a WordPress Site Health report into a risk-tiered, backup-first fix plan with exact WP-CLI/PHP snippets. Use for site health, recommended improvements, or critical issue reports. _(risk: critical)_
+- **what-could-break**: Find what a change breaks outside its own diff, then prove the one fact that makes it safe by running real code. Use before any multi-file edit or an edit to a shared path. _(risk: safe)_
 
 ## development-and-testing
 
@@ -1705,6 +1707,7 @@ api docs, reference,... _(risk: unknown)_
 - **traderspy-trading-signals**: Fetch and explain TraderSpy's AI crypto futures signals: entry, take-profit ladder, stop, triggers, status against the live price, and how recent signals resolved. Use for "latest signals". _(risk: safe)_
 - **xvary-stock-research**: Thesis-driven equity analysis from public SEC EDGAR and market data; /analyze, /score, /compare workflows with bundled Python tools (Claude Code, Cursor, Codex). _(risk: safe)_
 - **yield-intelligence**: Passive income portfolio analysis — activate when user asks about dividend yields, Treasury rates, REIT income, monthly passive income goals, or portfolio yield optimization. Scans 4 asset classes, ranks by risk-adjusted return, and builds allocations targeting a specific monthly income. _(risk: safe)_
+- **equibles**: Query Equibles for US stock market data: SEC filing search, XBRL financial statements, earnings call transcripts, insider and 13F holdings, and daily prices. _(risk: safe)_
 
 ## fintech
 
@@ -1842,6 +1845,7 @@ makepad Markdown, makepad Html, TextFlow, rich... _(risk: unknown)_
 - **review-animations**: Use when reviewing animation and motion code against a strict craft, performance, accessibility, and interaction-quality bar. _(risk: safe)_
 - **stitch-design-taste**: Use when generating Google Stitch DESIGN.md systems for premium typography, color, layout, motion intent, and anti-generic UI rules. _(risk: safe)_
 - **sveltekit**: Build full-stack web applications with SvelteKit — file-based routing, SSR, SSG, API routes, and form actions in one framework. _(risk: safe)_
+- **tastegate**: Build or fix a frontend so it looks designed, not AI-generated, then prove it in a real browser: renders at phone and desktop width and fails on overlap, low contrast and AI-slop defaults. _(risk: safe)_
 
 ## fullstack
 
@@ -2592,6 +2596,7 @@ add data to Google Sheets, find a spreadsheet, check sheet...
 - **survey-generator**: Generate source-backed AI/ML survey paper artifacts with curated bibliographies and Fireworks/Kimi HTML rendering. _(risk: safe)_
 - **system-prompt-lookup**: Checks what a shipped AI product's system prompt and tool schema actually say, by reading a dated archive of captured prompts instead of recalling them. Use before asserting or accepting any claim about an agent's instructions. _(risk: safe)_
 - **youtube-transcript**: Fetch YouTube transcripts through DeepAPI or local fallback tooling and save clean text output. _(risk: safe)_
+- **ask-human-expert**: Ask real executives and domain experts a question through Instant Expert for a written answer or short call: practitioner knowledge, customer discovery. Free test mode; live sends need approval. _(risk: critical)_
 
 ## reverse-engineering
 
@@ -3077,6 +3082,10 @@ calculations
 ## voice-agents
 
 - **pipecat-friday-agent**: Build a low-latency, Iron Man-inspired tactical voice assistant (F.R.I.D.A.Y.) using Pipecat, Gemini, and OpenAI. _(risk: safe)_
+
+## web
+
+- **url-to-markdown**: Fetch a public webpage as clean Markdown for an agent: read, summarize, quote, or cite the page while preserving its source URL. _(risk: safe)_
 
 ## web-development
 

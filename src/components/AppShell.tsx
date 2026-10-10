@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { Brand, BrandMark } from "./Brand";
 import { Button } from "./ui/button";
 import { ThemeControl } from "./ThemeControl";
+import { AppLoader } from "@/components/AppLoader";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "./ui/sheet";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -133,7 +134,7 @@ function Guard({ allow, children }: { allow?: Role[] | undefined; children: Reac
   const { roles, loading } = useRoles();
   const { pathname } = useLocation();
   if (!allow) return <>{children}</>;
-  if (loading) return <div className="grid h-64 place-items-center"><Loader2 className="animate-spin text-primary" /></div>;
+  if (loading) return <AppLoader compact message="Verifying workspace permissions…" submessage="Checking your assigned roles" />;
   const ok = allow.some((r) => roles.includes(r)) || roles.includes("admin");
   if (ok) return <>{children}</>;
   if (pathname === "/dashboard") return <Navigate to="/my-passes" replace />;
@@ -276,8 +277,34 @@ export function AppShell({ title, children, actions, allow }: { title: string; c
     </DropdownMenu>
   );
 
+  // While roles are resolving, if there's no strict allow restriction (like /explore),
+  // render the student shell immediately to avoid flashing the organizer sidebar or getting stuck.
+  if (rolesLoading) {
+    if (!allow) {
+      return (
+        <div className="glass-ambient min-h-screen w-full max-w-full overflow-x-hidden bg-background">
+          <header className="workspace-header sticky top-0 z-20 border-b bg-card/85 backdrop-blur-md">
+            <div className="mx-auto flex h-[60px] sm:h-[68px] max-w-[1400px] items-center justify-between gap-2.5 px-4 sm:px-8">
+              <Link to="/explore" aria-label="EventEase home" className="shrink-0"><BrandMark /></Link>
+              <div className="hidden md:block"><StudentTopNav /></div>
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <ThemeControl />
+                {userMenu}
+              </div>
+            </div>
+          </header>
+          <main className="workspace-main mx-auto max-w-[1400px] px-4 py-6 sm:px-8 sm:py-8 pb-24 md:pb-8 w-full max-w-full overflow-x-hidden">
+            {children}
+          </main>
+          <StudentMobileBottomNav />
+        </div>
+      );
+    }
+    return <AppLoader fullscreen message="Verifying permissions…" submessage="Preparing your workspace" />;
+  }
+
   // Students get a clean top-nav layout — no organizer sidebar.
-  if (!rolesLoading && !isAdmin && !isOrganizer) {
+  if (!isAdmin && !isOrganizer) {
     return (
       <div className="glass-ambient min-h-screen w-full max-w-full overflow-x-hidden bg-background">
         <header className="workspace-header sticky top-0 z-20 border-b bg-card/85 backdrop-blur-md">

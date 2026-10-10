@@ -13,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/lib/auth";
-import { fmtDate, type EventRow } from "@/lib/events";
+import { fmtDate, fmtDateRange, type EventRow } from "@/lib/events";
 import { EditEventDialog } from "@/components/EditEventDialog";
 import { zoneOverviewQuery } from "@/lib/zones";
 import type { Role } from "@/lib/roles";
@@ -195,7 +195,7 @@ function Page() {
                       const owner = d.profiles.find((p) => p.id === e.owner_id);
                       return (
                         <tr key={e.id} className="border-b last:border-0 hover:bg-muted/40">
-                          <td className="p-4"><p className="font-medium">{e.title}</p><p className="text-xs text-muted-foreground">{fmtDate(e.starts_at)}</p></td>
+                          <td className="p-4"><p className="font-medium">{e.title}</p><p className="text-xs text-muted-foreground">{fmtDateRange(e.starts_at, e.ends_at)}</p></td>
                           <td className="p-4 text-xs">{owner?.email ?? "—"}</td>
                           <td className="p-4 font-semibold">{s.r}/{e.capacity}</td>
                           <td className="p-4 font-semibold text-success">{s.c}</td>
@@ -286,16 +286,16 @@ function EventManageDialog({ event, registered, checkedIn, onClose, onToggle }: 
   onClose: () => void;
   onToggle: (id: string, is_open: boolean) => void;
 }) {
-  const link = event ? `${window.location.origin}/register/${event.id}` : "";
+  const link = event ? (typeof window !== "undefined" ? `${window.location.origin}/register/${event.id}` : `/register/${event.id}`) : "";
   return (
     <Dialog open={!!event} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+      <DialogContent className="glass-panel max-h-[90vh] max-w-2xl overflow-y-auto backdrop-blur-xl">
         {event && (
           <>
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2"><Settings2 className="size-5 text-primary" /> Manage — {event.title}</DialogTitle>
+              <DialogTitle className="flex items-center gap-2"><Settings2 className="size-5 text-primary" /> Manage — {event.title || "Event"}</DialogTitle>
             </DialogHeader>
-            <p className="text-sm text-muted-foreground">{fmtDate(event.starts_at)}{event.venue ? ` · ${event.venue}` : ""}</p>
+            <p className="text-sm text-muted-foreground">{fmtDateRange(event.starts_at, event.ends_at)}{event.venue ? ` · ${event.venue}` : ""}</p>
 
             <div className="grid grid-cols-3 gap-3">
               <div className="panel animate-fade-scale p-3 text-center"><p className="text-xs text-muted-foreground">Registered</p><p className="text-xl font-bold">{registered}/{event.capacity}</p></div>
@@ -304,8 +304,8 @@ function EventManageDialog({ event, registered, checkedIn, onClose, onToggle }: 
             </div>
 
             <div className="panel flex items-center justify-between gap-3 p-4">
-              <div><p className="font-semibold">Registration</p><p className="text-xs text-muted-foreground">{event.is_open ? "Students can register right now." : "Registration is closed for students."}</p></div>
-              <Switch checked={event.is_open} onCheckedChange={(v) => onToggle(event.id, v)} />
+              <div><p className="font-semibold">Registration</p><p className="text-xs text-muted-foreground">{event.is_open !== false ? "Students can register right now." : "Registration is closed for students."}</p></div>
+              <Switch checked={event.is_open !== false} onCheckedChange={(v) => onToggle(event.id, v)} />
             </div>
 
             <div className="panel flex items-center gap-2 p-4">

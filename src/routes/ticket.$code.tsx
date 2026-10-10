@@ -2,18 +2,19 @@ import { useEffect } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { QRCodeCanvas } from "qrcode.react";
-import { ArrowLeft, CalendarDays, CheckCircle2, MapPin, ShieldCheck, X } from "lucide-react";
+import { ArrowLeft, CalendarDays, CheckCircle2, MapPin, ScrollText, ShieldCheck, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Brand } from "@/components/Brand";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { categoryImage } from "@/lib/categories";
-import { fmtDate } from "@/lib/events";
+import { fmtDate, fmtDateRange, parseEventRules } from "@/lib/events";
 import { useAuth } from "@/lib/auth";
 
 type TicketInfo = {
   code: string; full_name: string; checked_in_at: string | null; event_id: string;
-  event_title: string; venue: string | null; starts_at: string; category: string;
+  event_title: string; venue: string | null; starts_at: string; ends_at?: string | null; category: string;
+  rules?: string | null;
 };
 
 export const Route = createFileRoute("/ticket/$code")({
@@ -91,7 +92,7 @@ function TicketPage() {
           )}
           {t && (
             <>
-              <div className="animate-rise overflow-hidden rounded-3xl bg-card shadow-float ring-1 ring-border">
+              <div className="animate-rise overflow-hidden rounded-3xl glass-panel shadow-float ring-1 ring-border/70 backdrop-blur-xl">
                 <div className="relative h-40 overflow-hidden">
                   <img src={categoryImage(t.category)} alt="" width={1024} height={640} className="h-full w-full object-cover" />
                   <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent" />
@@ -105,8 +106,8 @@ function TicketPage() {
                   <p className="mt-3 text-sm text-muted-foreground">Participant</p>
                   <p className="font-semibold">{t.full_name}</p>
                   <div className="mt-4 space-y-1.5 font-mono text-xs text-muted-foreground">
-                    <p className="flex items-center gap-2"><CalendarDays className="size-3" />{fmtDate(t.starts_at)}</p>
-                    {t.venue && <p className="flex items-center gap-2"><MapPin className="size-3" />{t.venue}</p>}
+                    <p className="flex items-center gap-2"><CalendarDays className="size-3 shrink-0" /><span>{fmtDateRange(t.starts_at, t.ends_at)}</span></p>
+                    {t.venue && <p className="flex items-center gap-2"><MapPin className="size-3 shrink-0" /><span>{t.venue}</span></p>}
                   </div>
                 </div>
                 <div className="relative mx-6 border-t-2 border-dashed border-border" />
@@ -123,6 +124,27 @@ function TicketPage() {
                     <p className="mt-4 text-xs text-muted-foreground">Show this QR at the entry gate. Valid for one entry only.</p>
                   )}
                 </div>
+
+                {(() => {
+                  const rules = parseEventRules(t.rules);
+                  if (rules.length === 0) return null;
+                  return (
+                    <div className="border-t border-border bg-muted/40 px-6 py-4 text-left">
+                      <div className="flex items-center gap-2">
+                        <ScrollText className="size-3.5 text-primary" />
+                        <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-primary">Entry Rules & Guidelines</span>
+                      </div>
+                      <ul className="mt-2.5 space-y-2 text-xs text-muted-foreground">
+                        {rules.map((rule, idx) => (
+                          <li key={idx} className="flex items-start gap-2">
+                            <span className="mt-1 flex size-1.5 shrink-0 rounded-full bg-primary" />
+                            <span className="leading-relaxed">{rule}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Bottom dismiss — easy to reach with a thumb on a phone */}

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowLeft, CalendarDays, Copy, ExternalLink, MapPin, Trash2 } from "lucide-react";
+import { ArrowLeft, CalendarDays, Copy, ExternalLink, MapPin, ScrollText, Trash2 } from "lucide-react";
 import { EditEventDialog } from "@/components/EditEventDialog";
 import { EventUpdatePanel } from "@/components/EventUpdatePanel";
 import { Switch } from "@/components/ui/switch";
@@ -23,7 +23,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { eventQuery, fmtDate, participantsQuery, scanLogsQuery } from "@/lib/events";
+import { eventQuery, fmtDate, fmtDateRange, parseEventRules, participantsQuery, scanLogsQuery } from "@/lib/events";
 import { categoryImage } from "@/lib/categories";
 import { ZonesPanel } from "@/components/ZonesPanel";
 import { HostBadge } from "@/components/HostBadge";
@@ -79,9 +79,9 @@ function EventConsole() {
   const registered = list.length;
   const checkedIn = list.filter((p) => p.checked_in_at).length;
 
-  if (ev.isLoading) return <AppShell allow={["organizer"]} title="Event console"><Skeleton className="h-72 rounded-2xl" /></AppShell>;
+  if (ev.isLoading) return <AppShell allow={["organizer", "admin"]} title="Event console"><Skeleton className="h-72 rounded-2xl" /></AppShell>;
   if (!ev.data) return (
-    <AppShell allow={["organizer"]} title="Event console">
+    <AppShell allow={["organizer", "admin"]} title="Event console">
       <div className="grid place-items-center rounded-2xl border border-dashed bg-card p-16 text-center">
         <p className="text-xl font-semibold">Event not found</p>
         <Button asChild className="mt-4"><Link to="/events">Back to events</Link></Button>
@@ -110,7 +110,7 @@ function EventConsole() {
   }
 
   return (
-    <AppShell allow={["organizer"]} title={e.title}>
+    <AppShell allow={["organizer", "admin"]} title={e.title}>
       <Link to="/events" className="mb-5 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary"><ArrowLeft className="size-4" /> All events</Link>
 
       <section className="bg-hero relative mb-6 animate-rise overflow-hidden rounded-3xl p-6 text-navy-foreground sm:p-8">
@@ -121,7 +121,7 @@ function EventConsole() {
             <span className="rounded-full bg-primary/25 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-navy-foreground ring-1 ring-primary/40">{e.category}</span>
             <h1 className="mt-4 text-3xl font-bold sm:text-4xl">{e.title}</h1>
             <p className="mt-3 flex flex-wrap gap-4 text-sm text-navy-muted">
-              <span className="flex items-center gap-1.5"><CalendarDays className="size-4" />{fmtDate(e.starts_at)}</span>
+              <span className="flex items-center gap-1.5"><CalendarDays className="size-4" />{fmtDateRange(e.starts_at, e.ends_at)}</span>
               {e.venue && <span className="flex items-center gap-1.5"><MapPin className="size-4" />{e.venue}</span>}
             </p>
             {e.description && <p className="mt-3 max-w-[60ch] text-sm text-navy-muted">{e.description}</p>}
@@ -131,7 +131,7 @@ function EventConsole() {
           </div>
           <div className="grid shrink-0 grid-cols-3 gap-2 sm:gap-3">
             {[["Registered", registered, ""], ["Checked in", checkedIn, "text-success"], ["Capacity", e.capacity, ""]].map(([l, v, c]) => (
-              <div key={l as string} className="min-w-0 sm:min-w-[104px] rounded-2xl bg-navy-2/80 px-2.5 sm:px-4 py-2.5 sm:py-3 text-center sm:text-left ring-1 ring-navy-border backdrop-blur">
+              <div key={l as string} className="min-w-0 sm:min-w-[104px] rounded-2xl dark-glass px-2.5 sm:px-4 py-2.5 sm:py-3 text-center sm:text-left ring-1 ring-white/10 backdrop-blur-md">
                 <p className="text-[10px] sm:text-[11px] text-navy-muted truncate">{l}</p>
                 <CountUp value={v as number} className={`mt-0.5 sm:mt-1 block font-display text-lg sm:text-2xl font-bold ${c}`} />
               </div>
@@ -198,7 +198,7 @@ function EventConsole() {
               <RegisterForm eventId={e.id} eventTitle={e.title} disabled={full} onRegistered={(t) => { setTicket(t); refresh(); }} />
             </div>
             {ticket ? (
-              <Ticket code={ticket.code} name={ticket.full_name} email={ticket.email} eventTitle={e.title} meta={e.venue ?? undefined} date={fmtDate(e.starts_at)} />
+              <Ticket code={ticket.code} name={ticket.full_name} email={ticket.email} eventTitle={e.title} meta={e.venue ?? undefined} date={fmtDateRange(e.starts_at, e.ends_at)} />
             ) : (
               <div className="grid min-h-[320px] place-items-center rounded-2xl border border-dashed bg-card p-10 text-center">
                 <div><p className="font-semibold">Pass preview</p><p className="mt-2 text-sm text-muted-foreground">A unique QR pass and entry code appear here after registration.</p></div>
@@ -222,14 +222,51 @@ function EventConsole() {
             </div>
             <div className="mt-6 flex items-center justify-between rounded-xl border bg-muted/40 px-4 py-3">
               <div>
-                <p className="text-sm font-semibold">Registrations {e.is_open ? "open" : "closed"}</p>
-                <p className="text-xs text-muted-foreground">{e.is_open ? "New participants can register via the public link." : "The public link shows a closed message — no new registrations."}</p>
+                <p className="text-sm font-semibold">Registrations {e.is_open !== false ? "open" : "closed"}</p>
+                <p className="text-xs text-muted-foreground">{e.is_open !== false ? "New participants can register via the public link." : "The public link shows a closed message — no new registrations."}</p>
               </div>
-              <Switch checked={e.is_open} onCheckedChange={toggleOpen} aria-label="Toggle registrations" />
+              <Switch checked={e.is_open !== false} onCheckedChange={toggleOpen} aria-label="Toggle registrations" />
             </div>
-            {isAdmin && <div className="mt-4"><EditEventDialog event={e} /></div>}
           </div>
-          <div className="panel p-6">
+
+          <div className="panel p-6 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center gap-2.5">
+                <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <ScrollText className="size-4" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold">Rules & Guidelines</h2>
+                  <p className="text-xs text-muted-foreground">Enforced during registration and displayed on entry passes.</p>
+                </div>
+              </div>
+
+              <div className="mt-4 space-y-2">
+                {(() => {
+                  const rules = parseEventRules(e.rules);
+                  if (rules.length === 0) {
+                    return <p className="text-xs italic text-muted-foreground">No specific rules defined.</p>;
+                  }
+                  return rules.map((r, i) => (
+                    <div key={i} className="flex items-start gap-2.5 rounded-lg border border-border/60 bg-muted/30 p-2.5 text-xs text-foreground/90">
+                      <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[10px] font-bold text-primary">
+                        {i + 1}
+                      </span>
+                      <span className="leading-snug">{r}</span>
+                    </div>
+                  ));
+                })()}
+              </div>
+            </div>
+
+            {canManage && (
+              <div className="mt-4 pt-3 border-t border-border">
+                <EditEventDialog event={e} />
+              </div>
+            )}
+          </div>
+
+          <div className="panel p-6 lg:col-span-2">
             <h2 className="text-lg font-semibold">Danger zone</h2>
             <p className="mt-2 text-sm text-muted-foreground">Deleting removes the event, all participants and scan history permanently.</p>
             <AlertDialog>

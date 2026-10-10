@@ -5,13 +5,14 @@ import { CalendarDays, CheckCircle2, Clock, Loader2, ShieldCheck, ThumbsDown, Th
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
-import { fmtDate } from "@/lib/events";
+import { fmtDate, fmtDateRange } from "@/lib/events";
+import { AppLoader } from "./AppLoader";
 
 type Profile = { id: string; full_name: string | null; email: string | null };
 export type EditRequest = {
   id: string; event_id: string; requester_id: string; reason: string; status: string;
   admin_note: string | null; decided_at: string | null; created_at: string;
-  events: { title: string; starts_at: string } | null;
+  events: { title: string; starts_at: string; ends_at?: string | null } | null;
 };
 
 export function useEditRequests() {
@@ -19,7 +20,7 @@ export function useEditRequests() {
     queryKey: ["edit-requests", "admin"],
     refetchInterval: 20_000,
     queryFn: async () => {
-      const { data, error } = await supabase.from("event_edit_requests").select("*, events(title, starts_at)").order("created_at", { ascending: false });
+      const { data, error } = await supabase.from("event_edit_requests").select("*, events(title, starts_at, ends_at)").order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as unknown as EditRequest[];
     },
@@ -95,7 +96,7 @@ export function AdminEditRequests({ profiles }: { profiles: Profile[] }) {
   const history = all.filter((r) => r.status !== "pending").slice(0, 20);
   const who = (id: string) => { const p = profiles.find((x) => x.id === id); return p?.full_name || p?.email || "Organizer"; };
 
-  if (q.isLoading) return <div className="panel p-10 text-center text-sm text-muted-foreground"><Loader2 className="mx-auto animate-spin" /></div>;
+  if (q.isLoading) return <div className="panel p-6"><AppLoader compact message="Loading requests…" submessage="Retrieving event modification decisions" /></div>;
 
   return (
     <div className="space-y-8">
@@ -112,7 +113,7 @@ export function AdminEditRequests({ profiles }: { profiles: Profile[] }) {
                     <p className="truncate font-semibold">{r.events?.title ?? "Event"}</p>
                     <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                       <span className="inline-flex items-center gap-1"><User className="size-3" />{who(r.requester_id)}</span>
-                      {r.events && <span className="inline-flex items-center gap-1"><CalendarDays className="size-3" />{fmtDate(r.events.starts_at)}</span>}
+                      {r.events && <span className="inline-flex items-center gap-1"><CalendarDays className="size-3" />{fmtDateRange(r.events.starts_at, r.events.ends_at)}</span>}
                     </p>
                   </div>
                   <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">Pending</span>
